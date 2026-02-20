@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { Code, User, Wallet } from "lucide-react";
 import { Avatar } from "./Avatar";
 
@@ -17,8 +17,8 @@ const AppNav: React.FC = () => {
                 to="/payroll"
                 className={({ isActive }) =>
                     `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold transition ${isActive
-                        ? "text-[var(--accent)] bg-white/5"
-                        : "text-[var(--muted)] hover:bg-white/10 hover:text-white"
+                        ? "text-(--accent) bg-white/5"
+                        : "text-(--muted) hover:bg-white/10 hover:text-white"
                     }`
                 }
             >
@@ -32,8 +32,8 @@ const AppNav: React.FC = () => {
                 to="/employee"
                 className={({ isActive }) =>
                     `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold transition ${isActive
-                        ? "text-[var(--accent)] bg-white/5"
-                        : "text-[var(--muted)] hover:bg-white/10 hover:text-white"
+                        ? "text-(--accent) bg-white/5"
+                        : "text-(--muted) hover:bg-white/10 hover:text-white"
                     }`
                 }
             >
@@ -43,14 +43,14 @@ const AppNav: React.FC = () => {
                 Employees
             </NavLink>
 
-            <div className="w-px h-5 bg-[var(--border-hi)] mx-2" />
+            <div className="w-px h-5 bg-(--border-hi) mx-2" />
 
             <NavLink
                 to="/debug"
                 className={({ isActive }) =>
                     `flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-mono tracking-wide border transition ${isActive
-                        ? "text-[var(--accent2)] bg-[rgba(124,111,247,0.06)] border-[rgba(124,111,247,0.25)]"
-                        : "text-[var(--accent2)] bg-[rgba(124,111,247,0.06)] border-[rgba(124,111,247,0.25)] hover:bg-[rgba(124,111,247,0.12)]"
+                        ? "text-(--accent2) bg-[rgba(124,111,247,0.06)] border-[rgba(124,111,247,0.25)]"
+                        : "text-(--accent2) bg-[rgba(124,111,247,0.06)] border-[rgba(124,111,247,0.25)] hover:bg-[rgba(124,111,247,0.12)]"
                     }`
                 }
             >
@@ -58,19 +58,22 @@ const AppNav: React.FC = () => {
                 debugger
             </NavLink>
 
+            <Link to="/help" className="text-blue-500 text-xs underline ml-2">
+                Need help?
+            </Link>
 
-            <div className="mb-2 p-1 bg-gray-50 rounded-lg flex items-center gap-2">
+            <div className="p-1 bg-gray-50 rounded-lg flex items-center gap-2">
                 <Avatar
                     email={currentUser.email}
                     name={currentUser.name}
                     imageUrl={currentUser.imageUrl}
-                    size="md"
+                    size="sm"
                 />
                 <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">
+                    <p className="text-[10px] font-semibold text-gray-800 truncate">
                         {currentUser.name}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">{currentUser.email}</p>
+                    <p className="text-[10px] text-gray-500 truncate">{currentUser.email}</p>
                 </div>
             </div>
 

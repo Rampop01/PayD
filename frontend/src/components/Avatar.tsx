@@ -17,7 +17,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   className = "",
 }) => {
   const sizeClasses = {
-    sm: "w-8 h-8 text-xs",
+    sm: "w-7 h-7 text-xs",
     md: "w-10 h-10 text-sm",
     lg: "w-16 h-16 text-lg",
   };
@@ -36,7 +36,7 @@ export const Avatar: React.FC<AvatarProps> = ({
 
   return (
     <div
-      className={`${sizeClasses[size]} ${className} rounded-full overflow-hidden bg-gray-300 flex items-center justify-center flex-shrink-0`}
+      className={`${sizeClasses[size]} ${className} rounded-full overflow-hidden bg-gray-300 flex items-center justify-center shrink-0`}
       title={name}
     >
       <img
@@ -47,7 +47,7 @@ export const Avatar: React.FC<AvatarProps> = ({
           e.currentTarget.style.display = "none";
         }}
       />
-      <span className="bg-gradient-to-br from-blue-400 to-blue-600 text-white font-semibold hidden">
+      <span className="bg-linear-to-br from-blue-400 to-blue-600 text-white font-semibold hidden">
         {initials}
       </span>
     </div>

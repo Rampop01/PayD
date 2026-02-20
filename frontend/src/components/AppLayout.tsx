@@ -18,16 +18,16 @@ const AppLayout: React.FC = () => {
     return (
         <div className="flex flex-col min-h-screen bg-[#080b10] text-white">
             {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 h-[var(--header-h)] flex items-center px-16 flex justify-between bg-[#080b10]/85 backdrop-blur-[20px] backdrop-saturate-180 border-b border-white/10">
+            <header className="fixed top-0 left-0 right-0 z-50 h-(--header-h) items-center px-16 flex justify-between bg-[#080b10]/85 backdrop-blur-[20px] backdrop-saturate-180 border-b border-white/10">
                 {/* Logo */}
                 <NavLink className="flex items-center gap-2.5" to="/">
-                    <div className="w-8 h-8 rounded-lg grid place-items-center font-extrabold text-black text-sm tracking-tight shadow-[0_0_20px_rgba(74,240,184,0.3)] bg-gradient-to-br from-[var(--accent)] to-[var(--accent2)]">
+                    <div className="w-8 h-8 rounded-lg grid place-items-center font-extrabold text-black text-sm tracking-tight shadow-[0_0_20px_rgba(74,240,184,0.3)] bg-linear-to-br from-(--accent) to-(--accent2)">
                         P
                     </div>
                     <span className="text-lg font-extrabold tracking-tight">
-                        Pay<span className="text-[var(--accent)]">D</span>
+                        Pay<span className="text-(--accent)">D</span>
                     </span>
-                    <span className="text-[9px] font-normal font-mono text-[var(--muted)] tracking-widest uppercase border border-[var(--border-hi)] px-1.5 py-0.5 rounded ml-0.5">
+                    <span className="text-[9px] font-normal font-mono text-(--muted) tracking-widest uppercase border border-[var(--border-hi)] px-1.5 py-0.5 rounded ml-0.5">
                         BETA
                     </span>
                 </NavLink>
@@ -42,7 +42,7 @@ const AppLayout: React.FC = () => {
             </header>
 
             {/* Main */}
-            <main className="flex flex-col flex-1 pt-[var(--header-h)]">
+            <main className="flex flex-col flex-1 pt-(--header-h)">
                 <PageWrapper>
                     <div key={location.pathname} className="flex flex-col flex-1 px-6 py-8">
                         <Outlet />
@@ -51,20 +51,20 @@ const AppLayout: React.FC = () => {
             </main>
 
             {/* Footer */}
-            <footer className="flex flex-wrap justify-between items-center gap-2 px-6 py-5 border-t border-white/10 text-xs font-mono text-[var(--muted)]">
+            <footer className="flex flex-wrap justify-between items-center gap-2 px-6 py-5 border-t border-white/10 text-xs font-mono text-(--muted)">
                 <span>
                     © {new Date().getFullYear()} PayD — Licensed under the{" "}
                     <a
                         href="http://www.apache.org/licenses/LICENSE-2.0"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[var(--accent)] hover:underline"
+                        className="text-(--accent) hover:underline"
                     >
                         Apache License 2.0
                     </a>
                 </span>
                 <div className="flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_6px_var(--accent)]" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-(--accent) shadow-[0_0_6px_var(--accent)]" />
                     STELLAR NETWORK · MAINNET
                 </div>
             </footer>
