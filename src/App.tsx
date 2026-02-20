@@ -6,6 +6,7 @@ import { Routes, Route, Outlet, NavLink } from "react-router-dom";
 import Debugger from "./pages/Debugger.tsx";
 import PayrollScheduler from "./pages/PayrollScheduler";
 import EmployeeEntry from "./pages/EmployeeEntry";
+import FeeEstimation from "./pages/FeeEstimation";
 
 const AppLayout: React.FC = () => (
   <main>
@@ -30,6 +31,14 @@ const AppLayout: React.FC = () => (
               }
             >
               Employees
+            </NavLink>
+            <NavLink
+              to="/fees"
+              className={({ isActive }: { isActive: boolean }) =>
+                `text-sm font-medium ${isActive ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`
+              }
+            >
+              Fee Estimator
             </NavLink>
             <NavLink
               to="/debug"
@@ -78,6 +87,7 @@ function App() {
         {/* <Route path="/" element={<Home />} /> */}
         <Route path="/payroll" element={<PayrollScheduler />} />
         <Route path="/employee" element={<EmployeeEntry />} />
+        <Route path="/fees" element={<FeeEstimation />} />
         <Route path="/debug" element={<Debugger />} />
         <Route path="/debug/:contractName" element={<Debugger />} />
       </Route>
