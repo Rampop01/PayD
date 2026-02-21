@@ -8,7 +8,10 @@ export default function Home() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-6 py-12">
-      <div id="tour-welcome" className="mb-10 p-8 glass glow-mint rounded-full relative">
+      <div
+        id="tour-welcome"
+        className="mb-10 p-8 glass glow-mint rounded-full relative"
+      >
         <Icon.Rocket01 size="xl" className="text-accent relative z-20" />
         <div className="absolute inset-0 bg-accent opacity-5 blur-2xl rounded-full" />
       </div>
@@ -51,7 +54,9 @@ export default function Home() {
             <Icon.CreditCard01 size="lg" className="text-accent" />
           </div>
           <h3 className="text-xl font-bold mb-3">{t("home.card1Title")}</h3>
-          <p className="text-muted text-sm leading-relaxed">{t("home.card1Body")}</p>
+          <p className="text-muted text-sm leading-relaxed">
+            {t("home.card1Body")}
+          </p>
         </div>
 
         <div className="card glass noise">
@@ -59,7 +64,9 @@ export default function Home() {
             <Icon.Users01 size="lg" className="text-accent2" />
           </div>
           <h3 className="text-xl font-bold mb-3">{t("home.card2Title")}</h3>
-          <p className="text-muted text-sm leading-relaxed">{t("home.card2Body")}</p>
+          <p className="text-muted text-sm leading-relaxed">
+            {t("home.card2Body")}
+          </p>
         </div>
 
         <div className="card glass noise">
@@ -67,7 +74,9 @@ export default function Home() {
             <Icon.ShieldTick size="lg" className="text-danger" />
           </div>
           <h3 className="text-xl font-bold mb-3">{t("home.card3Title")}</h3>
-          <p className="text-muted text-sm leading-relaxed">{t("home.card3Body")}</p>
+          <p className="text-muted text-sm leading-relaxed">
+            {t("home.card3Body")}
+          </p>
         </div>
       </div>
     </div>

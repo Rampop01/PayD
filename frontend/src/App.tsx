@@ -12,113 +12,113 @@ import CustomReportBuilder from "./pages/CustomReportBuilder";
 import { useTranslation } from "react-i18next";
 
 function App() {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
 
-    return (
-        <Routes>
-            <Route element={<AppLayout />}>
-                <Route
-                    path="/"
-                    element={
-                        <ErrorBoundary
-                            fallback={
-                                <ErrorFallback
-                                    title={t("errorFallback.homeTitle")}
-                                    description={t("errorFallback.homeDescription")}
-                                />
-                            }
-                        >
-                            <Home />
-                        </ErrorBoundary>
-                    }
+  return (
+    <Routes>
+      <Route element={<AppLayout />}>
+        <Route
+          path="/"
+          element={
+            <ErrorBoundary
+              fallback={
+                <ErrorFallback
+                  title={t("errorFallback.homeTitle")}
+                  description={t("errorFallback.homeDescription")}
                 />
-                <Route
-                    path="/payroll"
-                    element={
-                        <ErrorBoundary
-                            fallback={
-                                <ErrorFallback
-                                    title={t("errorFallback.payrollTitle")}
-                                    description={t("errorFallback.payrollDescription")}
-                                />
-                            }
-                        >
-                            <PayrollScheduler />
-                        </ErrorBoundary>
-                    }
+              }
+            >
+              <Home />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/payroll"
+          element={
+            <ErrorBoundary
+              fallback={
+                <ErrorFallback
+                  title={t("errorFallback.payrollTitle")}
+                  description={t("errorFallback.payrollDescription")}
                 />
-                <Route
-                    path="/employee"
-                    element={
-                        <ErrorBoundary
-                            fallback={
-                                <ErrorFallback
-                                    title={t("errorFallback.employeesTitle")}
-                                    description={t("errorFallback.employeesDescription")}
-                                />
-                            }
-                        >
-                            <EmployeeEntry />
-                        </ErrorBoundary>
-                    }
+              }
+            >
+              <PayrollScheduler />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/employee"
+          element={
+            <ErrorBoundary
+              fallback={
+                <ErrorFallback
+                  title={t("errorFallback.employeesTitle")}
+                  description={t("errorFallback.employeesDescription")}
                 />
-                <Route
-                    path="/reports"
-                    element={
-                        <ErrorBoundary fallback={<ErrorFallback />}>
-                            <CustomReportBuilder />
-                        </ErrorBoundary>
-                    }
+              }
+            >
+              <EmployeeEntry />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ErrorBoundary fallback={<ErrorFallback />}>
+              <CustomReportBuilder />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/debug"
+          element={
+            <ErrorBoundary
+              fallback={
+                <ErrorFallback
+                  title={t("errorFallback.debuggerTitle")}
+                  description={t("errorFallback.debuggerDescription")}
                 />
-                <Route
-                    path="/debug"
-                    element={
-                        <ErrorBoundary
-                            fallback={
-                                <ErrorFallback
-                                    title={t("errorFallback.debuggerTitle")}
-                                    description={t("errorFallback.debuggerDescription")}
-                                />
-                            }
-                        >
-                            <Debugger />
-                        </ErrorBoundary>
-                    }
+              }
+            >
+              <Debugger />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/debug/:contractName"
+          element={
+            <ErrorBoundary
+              fallback={
+                <ErrorFallback
+                  title={t("errorFallback.debuggerTitle")}
+                  description={t("errorFallback.debuggerDescription")}
                 />
-                <Route
-                    path="/debug/:contractName"
-                    element={
-                        <ErrorBoundary
-                            fallback={
-                                <ErrorFallback
-                                    title={t("errorFallback.debuggerTitle")}
-                                    description={t("errorFallback.debuggerDescription")}
-                                />
-                            }
-                        >
-                            <Debugger />
-                        </ErrorBoundary>
-                    }
-                />
-                <Route
-                    path="/settings"
-                    element={
-                        <ErrorBoundary fallback={<ErrorFallback />}>
-                            <Settings />
-                        </ErrorBoundary>
-                    }
-                />
-                <Route
-                    path="/help"
-                    element={
-                        <ErrorBoundary fallback={<ErrorFallback />}>
-                            <HelpCenter />
-                        </ErrorBoundary>
-                    }
-                />
-            </Route>
-        </Routes>
-    );
+              }
+            >
+              <Debugger />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ErrorBoundary fallback={<ErrorFallback />}>
+              <Settings />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="/help"
+          element={
+            <ErrorBoundary fallback={<ErrorFallback />}>
+              <HelpCenter />
+            </ErrorBoundary>
+          }
+        />
+      </Route>
+    </Routes>
+  );
 }
 
 export default App;

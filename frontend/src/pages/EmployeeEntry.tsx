@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Icon, Button, Card, Input, Select, Alert } from "@stellar/design-system";
+import {
+  Icon,
+  Button,
+  Card,
+  Input,
+  Select,
+  Alert,
+} from "@stellar/design-system";
 import { EmployeeList } from "../components/EmployeeList";
 import { AutosaveIndicator } from "../components/AutosaveIndicator";
 import { useAutosave } from "../hooks/useAutosave";
@@ -78,7 +85,7 @@ export default function EmployeeEntry() {
   } | null>(null);
   const { saving, lastSaved, loadSavedData } = useAutosave<EmployeeFormState>(
     "employee-entry-draft",
-    formData
+    formData,
   );
   const { t } = useTranslation();
 
@@ -129,7 +136,9 @@ export default function EmployeeEntry() {
 
   if (isAdding) {
     return (
-      <div style={{ maxWidth: "600px", margin: "2rem auto", padding: "0 1rem" }}>
+      <div
+        style={{ maxWidth: "600px", margin: "2rem auto", padding: "0 1rem" }}
+      >
         <div
           style={{
             display: "flex",
@@ -184,16 +193,22 @@ export default function EmployeeEntry() {
                 >
                   [SIMULATED EMAIL NOTIFICATION TO EMPLOYEE]
                 </strong>
-                Hello {formData.fullName}, your employer has added you to the payroll.
+                Hello {formData.fullName}, your employer has added you to the
+                payroll.
                 <br />
-                A default Stellar wallet has been created for you to receive claimable
-                balances.
+                A default Stellar wallet has been created for you to receive
+                claimable balances.
                 <br />
-                <b style={{ display: "block", marginTop: "0.5rem" }}>Your Secret Key:</b>{" "}
-                <code style={{ wordBreak: "break-all" }}>{notification.secretKey}</code>
+                <b style={{ display: "block", marginTop: "0.5rem" }}>
+                  Your Secret Key:
+                </b>{" "}
+                <code style={{ wordBreak: "break-all" }}>
+                  {notification.secretKey}
+                </code>
                 <br />
                 <i style={{ display: "block", marginTop: "0.5rem" }}>
-                  Please save this secret key securely to claim your future salary.
+                  Please save this secret key securely to claim your future
+                  salary.
                 </i>
               </div>
             )}
@@ -261,8 +276,14 @@ export default function EmployeeEntry() {
       <div className="w-full mb-12 flex items-end justify-between border-b border-hi pb-8">
         <div>
           <h1 className="text-4xl font-black mb-2 tracking-tight">
-            {t("employees.title", { highlight: "" }).replace("{{highlight}}", "")}
-            <span className="text-accent"> {t("employees.titleHighlight")}</span>
+            {t("employees.title", { highlight: "" }).replace(
+              "{{highlight}}",
+              "",
+            )}
+            <span className="text-accent">
+              {" "}
+              {t("employees.titleHighlight")}
+            </span>
           </h1>
           <p className="text-muted font-mono text-sm tracking-wider uppercase">
             {t("employees.subtitle")}
