@@ -8,6 +8,8 @@ export const CountdownTimer = ({ targetDate }: { targetDate: Date | null }) => {
         seconds: 0,
     });
 
+    // initializer
+
     useEffect(() => {
         if (!targetDate) return;
 
