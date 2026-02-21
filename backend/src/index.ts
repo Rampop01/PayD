@@ -1,33 +1,71 @@
-import app from './app';
-import config from './config';
-import logger from './utils/logger';
+import express from 'express';
+import cors from 'cors';
+import { createServer } from 'http';
+import { config } from './config/env';
+import searchRoutes from './routes/searchRoutes';
+import employeeRoutes from './routes/employeeRoutes';
+import paymentRoutes from './routes/paymentRoutes';
+import authRoutes from './routes/authRoutes';
+import assetRoutes from './routes/assetRoutes';
+import { initializeSocket, emitTransactionUpdate } from './services/socketService';
+import { HealthController } from './controllers/healthController';
 
-const port = config.port;
+const app = express();
+const httpServer = createServer(app);
 
-const server = app.listen(port, () => {
-  logger.info(`🚀 PayD Backend Server listening on port ${port}`);
-  logger.info(`📊 Environment: ${config.nodeEnv}`);
-  logger.info(`🌍 Stellar Network: ${config.stellar.networkPassphrase}`);
-  logger.info(`📡 Horizon URL: ${config.stellar.horizonUrl}`);
-  logger.info(`🎯 SDS Enabled: ${config.sds.enabled}`);
-  logger.info(`🔒 SDS Endpoint: ${config.sds.endpoint}`);
-});
+// Initialize Socket.IO
+initializeSocket(httpServer);
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  logger.info('SIGTERM received, shutting down gracefully...');
-  server.close(() => {
-    logger.info('Server shutdown complete');
-    process.exit(0);
+// Middleware
+app.use(cors({ origin: config.CORS_ORIGIN, credentials: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/assets', assetRoutes);
+
+// Transaction simulation endpoint (for testing WebSocket updates)
+app.post('/api/simulate-transaction-update', (req, res) => {
+  const { transactionId, status, data } = req.body;
+  
+  if (!transactionId || !status) {
+    return res.status(400).json({ error: 'Missing transactionId or status' });
+  }
+
+  emitTransactionUpdate(transactionId, status, data);
+  
+  return res.json({ 
+    success: true, 
+    message: `Update emitted for transaction ${transactionId}` 
   });
 });
 
-process.on('SIGINT', () => {
-  logger.info('SIGINT received, shutting down gracefully...');
-  server.close(() => {
-    logger.info('Server shutdown complete');
-    process.exit(0);
+// Health check
+app.get('/health', HealthController.getHealthStatus);
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route not found' });
+});
+
+// Error handler
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('Error:', err);
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal server error',
   });
 });
 
-export default server;
+const PORT = config.PORT || 3000;
+
+httpServer.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${config.NODE_ENV}`);
+});
+
+export default app;
