@@ -17,7 +17,7 @@ const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
-  const { notify } = useNotification();
+  const { notifySuccess, notifyError } = useNotification();
 
   useEffect(() => {
     const newSocket = io(SOCKET_URL, {
@@ -31,13 +31,13 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     newSocket.on('connect', () => {
       console.log('Socket connected:', newSocket.id);
       setConnected(true);
-      notify('Real-time updates connected');
+      notifySuccess('Real-time updates connected');
     });
 
     newSocket.on('disconnect', () => {
       console.log('Socket disconnected');
       setConnected(false);
-      notify('Real-time updates disconnected');
+      notifyError('Real-time updates disconnected');
     });
 
     newSocket.on('connect_error', (err) => {

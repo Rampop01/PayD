@@ -8,7 +8,8 @@
   box-sizing: border-box;
 }
 
-:root {
+:root,
+[data-theme="dark"] {
   --bg: #080b10;
   --surface: #0d1117;
   --surface-hi: #161b22;
@@ -24,6 +25,26 @@
   --font-head: "Syne", sans-serif;
   --font-body: "Inter", sans-serif;
   --font-mono: "DM Mono", monospace;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg: #f6f8fa;
+  --surface: #ffffff;
+  --surface-hi: #f0f2f5;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-hi: rgba(0, 0, 0, 0.15);
+  --text: #1f2328;
+  --muted: #656d76;
+  --accent: #0d9668;
+  --accent2: #6c5ce7;
+  --danger: #d1242f;
+  --success: #1a7f37;
+  --header-h: 64px;
+  --font-head: "Syne", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "DM Mono", monospace;
+  color-scheme: light;
 }
 
 html,
@@ -66,6 +87,10 @@ h6 {
   backdrop-filter: blur(10px);
   border: 1px solid var(--border);
   border-radius: 12px;
+}
+
+[data-theme="light"] .glass {
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .noise {

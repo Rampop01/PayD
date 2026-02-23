@@ -2,33 +2,56 @@ import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { config } from './config/env';
-import searchRoutes from './routes/searchRoutes';
-import employeeRoutes from './routes/employeeRoutes';
-import paymentRoutes from './routes/paymentRoutes';
-import authRoutes from './routes/authRoutes';
-import assetRoutes from './routes/assetRoutes';
+import { getThrottlingConfig } from './config/env';
+import { apiVersionMiddleware } from './middlewares/apiVersionMiddleware';
+import v1Routes from './routes/v1';
 import { initializeSocket, emitTransactionUpdate } from './services/socketService';
 import { HealthController } from './controllers/healthController';
+import { ThrottlingService } from './services/throttlingService';
 
 const app = express();
 const httpServer = createServer(app);
 
-// Initialize Socket.IO
 initializeSocket(httpServer);
 
-// Middleware
+ThrottlingService.getInstance(getThrottlingConfig());
+
 app.use(cors({ origin: config.CORS_ORIGIN, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/search', searchRoutes);
-app.use('/api/employees', employeeRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/assets', assetRoutes);
+app.use(apiVersionMiddleware);
 
-// Transaction simulation endpoint (for testing WebSocket updates)
+app.use('/api/v1', v1Routes);
+
+app.use('/api/auth', v1Routes);
+app.use('/api/search', v1Routes);
+app.use('/api/employees', v1Routes);
+app.use('/api/payments', v1Routes);
+app.use('/api/assets', v1Routes);
+app.use('/api/throttling', v1Routes);
+app.use('/api/payroll-bonus', v1Routes);
+app.use('/api/payroll/audit', v1Routes);
+app.use('/api/payroll', v1Routes);
+app.use('/api/audit', v1Routes);
+app.use('/api/balance', v1Routes);
+app.use('/api/trustline', v1Routes);
+
+app.post('/api/v1/simulate-transaction-update', (req, res) => {
+  const { transactionId, status, data } = req.body;
+  
+  if (!transactionId || !status) {
+    return res.status(400).json({ error: 'Missing transactionId or status' });
+  }
+
+  emitTransactionUpdate(transactionId, status, data);
+  
+  return res.json({ 
+    success: true, 
+    message: `Update emitted for transaction ${transactionId}` 
+  });
+});
+
 app.post('/api/simulate-transaction-update', (req, res) => {
   const { transactionId, status, data } = req.body;
   
@@ -44,16 +67,23 @@ app.post('/api/simulate-transaction-update', (req, res) => {
   });
 });
 
-// Health check
 app.get('/health', HealthController.getHealthStatus);
 
-// 404 handler
+app.get('/api', (req, res) => {
+  res.json({
+    name: 'PayD API',
+    currentVersion: 'v1',
+    supportedVersions: ['v1'],
+    endpoints: {
+      v1: '/api/v1',
+    },
+  });
+});
+
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Error handler
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Error:', err);
   res.status(err.status || 500).json({

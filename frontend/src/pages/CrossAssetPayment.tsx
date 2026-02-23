@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { anchorService } from "../services/anchor";
 import { Loader2, ArrowRightLeft, ShieldCheck, Info, CheckCircle2 } from "lucide-react";
+import { useNotification } from "../providers/NotificationProvider";
 
 export default function CrossAssetPayment() {
+    const { notifySuccess, notifyError } = useNotification();
     const [domain, setDomain] = useState("testanchor.stellar.org");
     const [assetIn, setAssetIn] = useState("USDC");
     const [assetOut, setAssetOut] = useState("NGN");
@@ -28,6 +30,7 @@ export default function CrossAssetPayment() {
             }, 1000);
         } catch (error) {
             console.error(error);
+            notifyError("Quote fetch failed", "Could not retrieve conversion rate from anchor.");
             setIsLoading(false);
         }
     };
@@ -44,6 +47,7 @@ export default function CrossAssetPayment() {
             });
             setTransaction(result);
             setStatus("pending");
+            notifySuccess("Payment initiated", `Transaction ID: ${result.id}`);
 
             // Start polling for status
             const interval = setInterval(async () => {
@@ -51,12 +55,14 @@ export default function CrossAssetPayment() {
                 setTransaction(statusUpdate);
                 if (statusUpdate.status === "completed") {
                     setStatus("completed");
+                    notifySuccess("Payment completed!", `${amount} ${assetIn} sent successfully.`);
                     clearInterval(interval);
                 }
             }, 3000);
 
         } catch (error) {
             setStatus("error");
+            notifyError("Payment failed", error instanceof Error ? error.message : "An unexpected error occurred.");
         }
     };
 

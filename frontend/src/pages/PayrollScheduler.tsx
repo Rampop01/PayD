@@ -38,7 +38,7 @@ const initialFormState: PayrollFormState = {
 
 export default function PayrollScheduler() {
   const { t } = useTranslation();
-  const { notify } = useNotification();
+  const { notifySuccess, notifyError } = useNotification();
   const { socket, subscribeToTransaction, unsubscribeFromTransaction } = useSocket();
   const [formData, setFormData] = useState<PayrollFormState>(initialFormState);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
@@ -82,7 +82,7 @@ export default function PayrollScheduler() {
   const handleScheduleComplete = (config: any) => {
     setActiveSchedule(config);
     setIsWizardOpen(false);
-    notify("Payroll schedule successfully configured!");
+    notifySuccess("Payroll schedule configured!", `Frequency: ${config.frequency}, time: ${config.timeOfDay}`);
 
     // Compute next run for countdown demo
     const d = new Date();
@@ -117,7 +117,7 @@ export default function PayrollScheduler() {
       );
       
       if (data.status === 'confirmed') {
-        notify(`Payment ${data.transactionId} confirmed!`);
+        notifySuccess("Payment confirmed!", `TX: ${data.transactionId}`);
       }
     };
 
@@ -126,13 +126,13 @@ export default function PayrollScheduler() {
     return () => {
       socket.off('transaction:update', handleTransactionUpdate);
     };
-  }, [socket, notify]);
+  }, [socket, notifySuccess]);
 
   const handleInitialize = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.employeeName || !formData.amount) {
-      notify("Please fill in all required fields.");
+      notifyError("Missing required fields", "Please provide employee name and amount.");
       return;
     }
 
@@ -167,12 +167,12 @@ export default function PayrollScheduler() {
       // Subscribe to updates for this new claim
       subscribeToTransaction(newClaim.id);
 
-      notify("Payroll stream successfully broadcasted to Stellar network!");
+      notifySuccess("Broadcast successful!", `Claimable balance created for ${formData.employeeName}`);
       resetSimulation();
       setFormData(initialFormState);
     } catch (err) {
       console.error(err);
-      notify("Broadcast failed. Please check your connection.");
+      notifyError("Broadcast failed", "Please check your network connection and try again.");
     } finally {
       setIsBroadcasting(false);
     }

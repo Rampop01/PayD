@@ -1,7 +1,10 @@
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext, useCallback } from "react";
+import { toast } from "sonner";
 
 interface NotificationContextType {
   notify: (message: string) => void;
+  notifySuccess: (message: string, description?: string) => void;
+  notifyError: (message: string, description?: string) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(
@@ -11,12 +14,20 @@ const NotificationContext = createContext<NotificationContextType | undefined>(
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const notify = (message: string) => {
-    alert(message); // Placeholder for better UI notification
-  };
+  const notify = useCallback((message: string) => {
+    toast(message);
+  }, []);
+
+  const notifySuccess = useCallback((message: string, description?: string) => {
+    toast.success(message, { description });
+  }, []);
+
+  const notifyError = useCallback((message: string, description?: string) => {
+    toast.error(message, { description });
+  }, []);
 
   return (
-    <NotificationContext.Provider value={{ notify }}>
+    <NotificationContext.Provider value={{ notify, notifySuccess, notifyError }}>
       {children}
     </NotificationContext.Provider>
   );
