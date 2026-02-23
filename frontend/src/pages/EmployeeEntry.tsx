@@ -9,6 +9,7 @@ import {
 } from "@stellar/design-system";
 import { EmployeeList } from "../components/EmployeeList";
 import { AutosaveIndicator } from "../components/AutosaveIndicator";
+import { WalletQRCode } from "../components/WalletQRCode";
 import { useAutosave } from "../hooks/useAutosave";
 import { generateWallet } from "../services/stellar";
 import { useTranslation } from "react-i18next";
@@ -83,6 +84,8 @@ export default function EmployeeEntry() {
   const [notification, setNotification] = useState<{
     message: string;
     secretKey?: string;
+    walletAddress?: string;
+    employeeName?: string;
   } | null>(null);
   const { notifySuccess } = useNotification();
   const { saving, lastSaved, loadSavedData } = useAutosave<EmployeeFormState>(
@@ -138,13 +141,15 @@ export default function EmployeeEntry() {
         generatedWallet ? "A wallet was created for them." : ""
       }`,
       secretKey: generatedWallet?.secretKey,
+      walletAddress: submitData.walletAddress,
+      employeeName: submitData.fullName,
     });
   };
 
   if (isAdding) {
     return (
       <div
-        style={{ maxWidth: "600px", margin: "2rem auto", padding: "0 1rem" }}
+        style={{ maxWidth: notification?.walletAddress ? "800px" : "600px", margin: "2rem auto", padding: "0 1rem" }}
       >
         <div
           style={{
@@ -175,50 +180,21 @@ export default function EmployeeEntry() {
           <AutosaveIndicator saving={saving} lastSaved={lastSaved} />
         </div>
 
-        {notification && (
+        {notification && notification.walletAddress && (
+          <div style={{ marginBottom: "1.5rem" }}>
+            <WalletQRCode
+              walletAddress={notification.walletAddress}
+              secretKey={notification.secretKey}
+              employeeName={notification.employeeName}
+            />
+          </div>
+        )}
+
+        {notification && !notification.walletAddress && (
           <div style={{ marginBottom: "1.5rem" }}>
             <Alert variant="success" title="Success" placement="inline">
               {notification.message}
             </Alert>
-            {notification.secretKey && (
-              <div
-                style={{
-                  marginTop: "0.5rem",
-                  padding: "1rem",
-                  backgroundColor: "var(--color-yellow-100)",
-                  color: "var(--color-yellow-900)",
-                  borderRadius: "8px",
-                  border: "1px solid var(--color-yellow-300)",
-                  fontSize: "0.875rem",
-                }}
-              >
-                <strong
-                  style={{
-                    display: "block",
-                    marginBottom: "0.5rem",
-                  }}
-                >
-                  [SIMULATED EMAIL NOTIFICATION TO EMPLOYEE]
-                </strong>
-                Hello {formData.fullName}, your employer has added you to the
-                payroll.
-                <br />
-                A default Stellar wallet has been created for you to receive
-                claimable balances.
-                <br />
-                <b style={{ display: "block", marginTop: "0.5rem" }}>
-                  Your Secret Key:
-                </b>{" "}
-                <code style={{ wordBreak: "break-all" }}>
-                  {notification.secretKey}
-                </code>
-                <br />
-                <i style={{ display: "block", marginTop: "0.5rem" }}>
-                  Please save this secret key securely to claim your future
-                  salary.
-                </i>
-              </div>
-            )}
           </div>
         )}
 
