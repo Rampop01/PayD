@@ -2,21 +2,25 @@ import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
 import { config } from './config/env';
+import { getThrottlingConfig } from './config/env';
 import searchRoutes from './routes/searchRoutes';
 import employeeRoutes from './routes/employeeRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import authRoutes from './routes/authRoutes';
 import assetRoutes from './routes/assetRoutes';
+import throttlingRoutes from './routes/throttlingRoutes';
 import { initializeSocket, emitTransactionUpdate } from './services/socketService';
 import { HealthController } from './controllers/healthController';
+import { ThrottlingService } from './services/throttlingService';
+import { throttlingMiddleware } from './middlewares/throttlingMiddleware';
 
 const app = express();
 const httpServer = createServer(app);
 
-// Initialize Socket.IO
 initializeSocket(httpServer);
 
-// Middleware
+ThrottlingService.getInstance(getThrottlingConfig());
+
 app.use(cors({ origin: config.CORS_ORIGIN, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -25,8 +29,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/employees', employeeRoutes);
-app.use('/api/payments', paymentRoutes);
+app.use('/api/payments', throttlingMiddleware(), paymentRoutes);
 app.use('/api/assets', assetRoutes);
+app.use('/api/throttling', throttlingRoutes);
 
 // Transaction simulation endpoint (for testing WebSocket updates)
 app.post('/api/simulate-transaction-update', (req, res) => {
