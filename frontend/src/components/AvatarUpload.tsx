@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { Avatar } from "./Avatar";
-import { uploadImage } from "../utils/imageOptimization";
+import React, { useState } from 'react';
+import { Avatar } from './Avatar';
+import { uploadImage } from '../utils/imageOptimization';
 
 interface AvatarUploadProps {
   email: string;
@@ -21,9 +21,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -34,7 +32,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
       const imageUrl = await uploadImage(file, endpoint);
       onImageUpload(imageUrl);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +56,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
         disabled={isLoading}
         className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
       >
-        {isLoading ? "Uploading..." : "Upload Avatar"}
+        {isLoading ? 'Uploading...' : 'Upload Avatar'}
       </button>
       {error && <p className="text-red-500 text-sm">{error}</p>}
     </div>

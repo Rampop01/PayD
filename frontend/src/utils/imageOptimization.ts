@@ -1,7 +1,7 @@
 export const resizeImage = (
   file: File,
   maxWidth: number = 400,
-  maxHeight: number = 400,
+  maxHeight: number = 400
 ): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -9,7 +9,7 @@ export const resizeImage = (
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        const canvas = document.createElement("canvas");
+        const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
 
@@ -27,50 +27,47 @@ export const resizeImage = (
 
         canvas.width = width;
         canvas.height = height;
-        const ctx = canvas.getContext("2d");
+        const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
 
         canvas.toBlob(
           (blob) => {
             resolve(blob!);
           },
-          "image/jpeg",
-          0.8,
+          'image/jpeg',
+          0.8
         );
       };
-      img.onerror = () => reject(new Error("Failed to load image"));
+      img.onerror = () => reject(new Error('Failed to load image'));
       img.src = event.target?.result as string;
     };
 
-    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsDataURL(file);
   });
 };
 
-export const uploadImage = async (
-  file: File,
-  endpoint: string,
-): Promise<string> => {
+export const uploadImage = async (file: File, endpoint: string): Promise<string> => {
   const resizedBlob = await resizeImage(file);
   const formData = new FormData();
-  formData.append("image", resizedBlob, "avatar.jpg");
+  formData.append('image', resizedBlob, 'avatar.jpg');
 
   const response = await fetch(endpoint, {
-    method: "POST",
+    method: 'POST',
     body: formData,
   });
 
-  if (!response.ok) throw new Error("Upload failed");
+  if (!response.ok) throw new Error('Upload failed');
 
   const raw = (await response.json()) as unknown;
 
   if (
-    typeof raw !== "object" ||
+    typeof raw !== 'object' ||
     raw === null ||
-    !("imageUrl" in raw) ||
-    typeof (raw as { imageUrl: unknown }).imageUrl !== "string"
+    !('imageUrl' in raw) ||
+    typeof (raw as { imageUrl: unknown }).imageUrl !== 'string'
   ) {
-    throw new Error("Invalid upload response");
+    throw new Error('Invalid upload response');
   }
 
   return (raw as { imageUrl: string }).imageUrl;

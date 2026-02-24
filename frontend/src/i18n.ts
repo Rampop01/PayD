@@ -1,8 +1,8 @@
-import i18n from "i18next";
-import { initReactI18next } from "react-i18next";
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
 
-import en from "./locales/en/translation.json";
-import es from "./locales/es/translation.json";
+import en from './locales/en/translation.json';
+import es from './locales/es/translation.json';
 
 void i18n.use(initReactI18next).init({
   resources: {
@@ -13,19 +13,19 @@ void i18n.use(initReactI18next).init({
       translation: es,
     },
   },
-  lng: "en",
-  fallbackLng: "en",
+  lng: 'en',
+  fallbackLng: 'en',
   interpolation: {
     escapeValue: false,
   },
 });
 
-const rtlLanguages = new Set<string>(["ar", "he", "fa"]);
+const rtlLanguages = new Set<string>(['ar', 'he', 'fa']);
 
-i18n.on("languageChanged", (lng) => {
+i18n.on('languageChanged', (lng) => {
   const html = document.documentElement;
   html.lang = lng;
-  html.dir = rtlLanguages.has(lng) ? "rtl" : "ltr";
+  html.dir = rtlLanguages.has(lng) ? 'rtl' : 'ltr';
 });
 
 export default i18n;

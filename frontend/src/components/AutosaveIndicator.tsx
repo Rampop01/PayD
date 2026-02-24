@@ -1,14 +1,11 @@
-import { useTranslation } from "react-i18next";
+import { useTranslation } from 'react-i18next';
 
 interface AutosaveIndicatorProps {
   saving: boolean;
   lastSaved: Date | null;
 }
 
-export const AutosaveIndicator = ({
-  saving,
-  lastSaved,
-}: AutosaveIndicatorProps) => {
+export const AutosaveIndicator = ({ saving, lastSaved }: AutosaveIndicatorProps) => {
   const { t } = useTranslation();
 
   if (saving) {
@@ -34,27 +31,25 @@ export const AutosaveIndicator = ({
             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
           />
         </svg>
-        <span className="uppercase tracking-widest">
-          {t("autosave.saving")}
-        </span>
+        <span className="uppercase tracking-widest">{t('autosave.saving')}</span>
       </div>
     );
   }
 
   if (lastSaved) {
     const time = lastSaved.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
+      hour: '2-digit',
+      minute: '2-digit',
     });
 
     return (
       <div className="flex items-center gap-2 text-[10px] font-mono text-muted">
         <div
           className="w-1.5 h-1.5 rounded-full bg-success/40"
-          style={{ background: "var(--success)" }}
+          style={{ background: 'var(--success)' }}
         />
         <span className="uppercase tracking-wider">
-          {t("autosave.saved")} {time}
+          {t('autosave.saved')} {time}
         </span>
       </div>
     );
@@ -63,9 +58,7 @@ export const AutosaveIndicator = ({
   return (
     <div className="flex items-center gap-2 text-[10px] font-mono text-muted">
       <div className="w-1.5 h-1.5 rounded-full bg-muted/40" />
-      <span className="uppercase tracking-wider">
-        {t("autosave.neverSaved")}
-      </span>
+      <span className="uppercase tracking-wider">{t('autosave.neverSaved')}</span>
     </div>
   );
 };

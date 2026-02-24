@@ -1,6 +1,6 @@
-import React from "react";
-import { Avatar } from "./Avatar";
-import { Icon } from "@stellar/design-system";
+import React from 'react';
+import { Avatar } from './Avatar';
+import { Icon } from '@stellar/design-system';
 
 interface Employee {
   id: string;
@@ -9,7 +9,7 @@ interface Employee {
   imageUrl?: string;
   position: string;
   wallet?: string;
-  status?: "Active" | "Inactive";
+  status?: 'Active' | 'Inactive';
 }
 
 interface EmployeeListProps {
@@ -17,12 +17,9 @@ interface EmployeeListProps {
   onEmployeeClick?: (employee: Employee) => void;
 }
 
-export const EmployeeList: React.FC<EmployeeListProps> = ({
-  employees,
-  onEmployeeClick,
-}) => {
+export const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onEmployeeClick }) => {
   const shortenWallet = (wallet: string) => {
-    if (!wallet) return "";
+    if (!wallet) return '';
     return `${wallet.slice(0, 4)}...${wallet.slice(-4)}`;
   };
 
@@ -31,21 +28,13 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
       <table className="w-full text-left border-collapse">
         <thead>
           <tr className="border-b border-hi">
-            <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">
-              Employee
-            </th>
-            <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">
-              Role
-            </th>
+            <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">Employee</th>
+            <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">Role</th>
             <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">
               Wallet Address
             </th>
-            <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">
-              Status
-            </th>
-            <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">
-              Actions
-            </th>
+            <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">Status</th>
+            <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
@@ -75,24 +64,22 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
                 </td>
                 <td className="p-6 text-sm font-medium">{employee.position}</td>
                 <td className="p-6 font-mono text-xs text-muted">
-                  {shortenWallet(employee.wallet || "")}
+                  {shortenWallet(employee.wallet || '')}
                 </td>
                 <td className="p-6">
                   <span
                     className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                      employee.status === "Active"
-                        ? "bg-green-100 text-green-600 border-green-200"
-                        : "bg-red-100 text-red-600 border-red-200"
+                      employee.status === 'Active'
+                        ? 'bg-green-100 text-green-600 border-green-200'
+                        : 'bg-red-100 text-red-600 border-red-200'
                     }`}
                   >
                     <div
                       className={`w-1 h-1 rounded-full ${
-                        employee.status === "Active"
-                          ? "bg-green-600"
-                          : "bg-red-600"
+                        employee.status === 'Active' ? 'bg-green-600' : 'bg-red-600'
                       }`}
                     />
-                    {employee.status || "-"}
+                    {employee.status || '-'}
                   </span>
                 </td>
                 <td className="p-6">
@@ -106,9 +93,7 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
         </tbody>
       </table>
       <div className="p-6 w-full flex flex-col items-center justify-center text-center bg-black/10">
-        <p className="text-muted mb-4 font-medium">
-          Need to migrate your legacy payroll system?
-        </p>
+        <p className="text-muted mb-4 font-medium">Need to migrate your legacy payroll system?</p>
         <button className="text-accent font-bold text-sm hover:underline">
           Import from CSV (Coming Soon)
         </button>

@@ -7,11 +7,11 @@
  * Issue: https://github.com/Gildado/PayD/issues/42
  */
 
-import React, { useState } from "react";
-import { useFeeEstimation } from "../hooks/useFeeEstimation";
-import type { BatchBudgetEstimate } from "../services/feeEstimation";
-import styles from "./FeeEstimationPanel.module.css";
-import { useTranslation } from "react-i18next";
+import React, { useState } from 'react';
+import { useFeeEstimation } from '../hooks/useFeeEstimation';
+import type { BatchBudgetEstimate } from '../services/feeEstimation';
+import styles from './FeeEstimationPanel.module.css';
+import { useTranslation } from 'react-i18next';
 
 // ---------------------------------------------------------------------------
 // Sub‑components
@@ -32,21 +32,13 @@ const SkeletonCard: React.FC = () => (
 // ---------------------------------------------------------------------------
 
 export const FeeEstimationPanel: React.FC = () => {
-  const {
-    feeRecommendation,
-    isLoading,
-    isError,
-    error,
-    refetch,
-    estimateBatch,
-  } = useFeeEstimation();
+  const { feeRecommendation, isLoading, isError, error, refetch, estimateBatch } =
+    useFeeEstimation();
   const { t } = useTranslation();
 
   // Batch estimator local state
-  const [txCount, setTxCount] = useState<string>("");
-  const [batchResult, setBatchResult] = useState<BatchBudgetEstimate | null>(
-    null,
-  );
+  const [txCount, setTxCount] = useState<string>('');
+  const [batchResult, setBatchResult] = useState<BatchBudgetEstimate | null>(null);
   const [batchLoading, setBatchLoading] = useState(false);
 
   const handleEstimateBatch = async () => {
@@ -64,34 +56,34 @@ export const FeeEstimationPanel: React.FC = () => {
   // ---- Congestion helpers ----
   const congestionClassName = (level: string) => {
     switch (level) {
-      case "low":
+      case 'low':
         return styles.congestionLow;
-      case "moderate":
+      case 'moderate':
         return styles.congestionModerate;
-      case "high":
+      case 'high':
         return styles.congestionHigh;
       default:
-        return "";
+        return '';
     }
   };
 
   const congestionLabel = (level: string) => {
     switch (level) {
-      case "low":
-        return t("feeEstimation.low");
-      case "moderate":
-        return t("feeEstimation.moderate");
-      case "high":
-        return t("feeEstimation.high");
+      case 'low':
+        return t('feeEstimation.low');
+      case 'moderate':
+        return t('feeEstimation.moderate');
+      case 'high':
+        return t('feeEstimation.high');
       default:
         return level;
     }
   };
 
   const capacityBarColor = (usage: number) => {
-    if (usage < 0.25) return "#10b981";
-    if (usage < 0.75) return "#f59e0b";
-    return "#ef4444";
+    if (usage < 0.25) return '#10b981';
+    if (usage < 0.75) return '#f59e0b';
+    return '#ef4444';
   };
 
   // ---- Render ----
@@ -99,11 +91,11 @@ export const FeeEstimationPanel: React.FC = () => {
     <div className={styles.panel}>
       {/* Header */}
       <div className={styles.header}>
-        <h1 className={styles.title}>{t("feeEstimation.title")}</h1>
+        <h1 className={styles.title}>{t('feeEstimation.title')}</h1>
         {!isLoading && !isError && (
           <span className={styles.liveBadge}>
             <span className={styles.liveDot} />
-            {t("feeEstimation.live")}
+            {t('feeEstimation.live')}
           </span>
         )}
       </div>
@@ -120,14 +112,14 @@ export const FeeEstimationPanel: React.FC = () => {
         {/* ---- Error State ---- */}
         {isError && (
           <div className={`${styles.card} ${styles.errorCard}`}>
-            <p>{error?.message || t("feeEstimation.error")}</p>
+            <p>{error?.message || t('feeEstimation.error')}</p>
             <button
               className={styles.retryBtn}
               onClick={() => {
                 void refetch();
               }}
             >
-              {t("feeEstimation.retry")}
+              {t('feeEstimation.retry')}
             </button>
           </div>
         )}
@@ -137,14 +129,10 @@ export const FeeEstimationPanel: React.FC = () => {
           <>
             {/* Network Status */}
             <div className={styles.card}>
-              <h2 className={styles.cardTitle}>
-                {t("feeEstimation.networkStatus")}
-              </h2>
+              <h2 className={styles.cardTitle}>{t('feeEstimation.networkStatus')}</h2>
 
               <div className={styles.statRow}>
-                <span className={styles.statLabel}>
-                  {t("feeEstimation.congestion")}
-                </span>
+                <span className={styles.statLabel}>{t('feeEstimation.congestion')}</span>
                 <span
                   className={`${styles.congestionBadge} ${congestionClassName(feeRecommendation.congestionLevel)}`}
                 >
@@ -153,35 +141,27 @@ export const FeeEstimationPanel: React.FC = () => {
               </div>
 
               <div className={styles.statRow}>
-                <span className={styles.statLabel}>
-                  {t("feeEstimation.lastLedger")}
-                </span>
+                <span className={styles.statLabel}>{t('feeEstimation.lastLedger')}</span>
                 <span className={styles.statValue}>
                   #{feeRecommendation.lastLedger.toLocaleString()}
                 </span>
               </div>
 
               {/* Capacity bar */}
-              <div style={{ marginTop: "0.5rem" }}>
-                <span className={styles.statLabel}>
-                  {t("feeEstimation.ledgerCapacityUsage")}
-                </span>
+              <div style={{ marginTop: '0.5rem' }}>
+                <span className={styles.statLabel}>{t('feeEstimation.ledgerCapacityUsage')}</span>
                 <div className={styles.capacityBarOuter}>
                   <div
                     className={styles.capacityBarInner}
                     style={{
                       width: `${Math.min(feeRecommendation.ledgerCapacityUsage * 100, 100)}%`,
-                      background: capacityBarColor(
-                        feeRecommendation.ledgerCapacityUsage,
-                      ),
+                      background: capacityBarColor(feeRecommendation.ledgerCapacityUsage),
                     }}
                   />
                 </div>
                 <div className={styles.capacityLabel}>
                   <span>0%</span>
-                  <span>
-                    {(feeRecommendation.ledgerCapacityUsage * 100).toFixed(1)}%
-                  </span>
+                  <span>{(feeRecommendation.ledgerCapacityUsage * 100).toFixed(1)}%</span>
                   <span>100%</span>
                 </div>
               </div>
@@ -189,18 +169,14 @@ export const FeeEstimationPanel: React.FC = () => {
 
             {/* Fee Recommendations */}
             <div className={styles.card}>
-              <h2 className={styles.cardTitle}>
-                {t("feeEstimation.recommendedFee")}
-              </h2>
+              <h2 className={styles.cardTitle}>{t('feeEstimation.recommendedFee')}</h2>
 
               <div className={styles.statRow}>
-                <span className={styles.statLabel}>
-                  {t("feeEstimation.baseFee")}
-                </span>
+                <span className={styles.statLabel}>{t('feeEstimation.baseFee')}</span>
                 <span className={styles.statValue}>
                   {feeRecommendation.baseFee.toLocaleString()} stroops
                   <span className={styles.statSub}>
-                    {t("feeEstimation.feeInXlm", {
+                    {t('feeEstimation.feeInXlm', {
                       amount: feeRecommendation.baseFeeXLM,
                     })}
                   </span>
@@ -208,13 +184,11 @@ export const FeeEstimationPanel: React.FC = () => {
               </div>
 
               <div className={styles.statRow}>
-                <span className={styles.statLabel}>
-                  {t("feeEstimation.recommendedFee")}
-                </span>
+                <span className={styles.statLabel}>{t('feeEstimation.recommendedFee')}</span>
                 <span className={styles.statValue}>
                   {feeRecommendation.recommendedFee.toLocaleString()} stroops
                   <span className={styles.statSub}>
-                    {t("feeEstimation.feeInXlm", {
+                    {t('feeEstimation.feeInXlm', {
                       amount: feeRecommendation.recommendedFeeXLM,
                     })}
                   </span>
@@ -222,13 +196,11 @@ export const FeeEstimationPanel: React.FC = () => {
               </div>
 
               <div className={styles.statRow}>
-                <span className={styles.statLabel}>
-                  {t("feeEstimation.maxFee")}
-                </span>
+                <span className={styles.statLabel}>{t('feeEstimation.maxFee')}</span>
                 <span className={styles.statValue}>
                   {feeRecommendation.maxFee.toLocaleString()} stroops
                   <span className={styles.statSub}>
-                    {t("feeEstimation.feeInXlm", {
+                    {t('feeEstimation.feeInXlm', {
                       amount: feeRecommendation.maxFeeXLM,
                     })}
                   </span>
@@ -241,12 +213,10 @@ export const FeeEstimationPanel: React.FC = () => {
               <div className={styles.alertBanner}>
                 <span className={styles.alertIcon}>⚠️</span>
                 <div className={styles.alertContent}>
-                  <h4>{t("feeEstimation.alertTitle")}</h4>
+                  <h4>{t('feeEstimation.alertTitle')}</h4>
                   <p>
-                    {t("feeEstimation.alertBody", {
-                      usage: (
-                        feeRecommendation.ledgerCapacityUsage * 100
-                      ).toFixed(1),
+                    {t('feeEstimation.alertBody', {
+                      usage: (feeRecommendation.ledgerCapacityUsage * 100).toFixed(1),
                       fee: feeRecommendation.recommendedFee.toLocaleString(),
                     })}
                   </p>
@@ -256,20 +226,18 @@ export const FeeEstimationPanel: React.FC = () => {
 
             {/* Batch Budget Estimator */}
             <div className={`${styles.card} ${styles.batchCard}`}>
-              <h2 className={styles.cardTitle}>
-                {t("feeEstimation.batchTitle")}
-              </h2>
+              <h2 className={styles.cardTitle}>{t('feeEstimation.batchTitle')}</h2>
 
               <div className={styles.batchInputRow}>
                 <label className={styles.statLabel} htmlFor="txCount">
-                  {t("feeEstimation.batchLabel")}
+                  {t('feeEstimation.batchLabel')}
                 </label>
                 <input
                   id="txCount"
                   className={styles.batchInput}
                   type="number"
                   min="1"
-                  placeholder={t("feeEstimation.batchPlaceholder")}
+                  placeholder={t('feeEstimation.batchPlaceholder')}
                   value={txCount}
                   onChange={(e) => {
                     setTxCount(e.target.value);
@@ -284,24 +252,20 @@ export const FeeEstimationPanel: React.FC = () => {
                   disabled={batchLoading || !txCount || parseInt(txCount) <= 0}
                 >
                   {batchLoading
-                    ? t("feeEstimation.batchCalculating")
-                    : t("feeEstimation.batchEstimate")}
+                    ? t('feeEstimation.batchCalculating')
+                    : t('feeEstimation.batchEstimate')}
                 </button>
               </div>
 
               {batchResult && (
                 <div className={styles.batchResults}>
                   <div className={styles.statRow}>
-                    <span className={styles.statLabel}>
-                      {t("feeEstimation.batchTransactions")}
-                    </span>
-                    <span className={styles.statValue}>
-                      {batchResult.transactionCount}
-                    </span>
+                    <span className={styles.statLabel}>{t('feeEstimation.batchTransactions')}</span>
+                    <span className={styles.statValue}>{batchResult.transactionCount}</span>
                   </div>
                   <div className={styles.statRow}>
                     <span className={styles.statLabel}>
-                      {t("feeEstimation.batchFeePerTransaction")}
+                      {t('feeEstimation.batchFeePerTransaction')}
                     </span>
                     <span className={styles.statValue}>
                       {batchResult.feePerTransaction.toLocaleString()} stroops
@@ -311,25 +275,18 @@ export const FeeEstimationPanel: React.FC = () => {
                     </span>
                   </div>
                   <div className={styles.statRow}>
-                    <span className={styles.statLabel}>
-                      {t("feeEstimation.batchTotalBudget")}
-                    </span>
+                    <span className={styles.statLabel}>{t('feeEstimation.batchTotalBudget')}</span>
                     <span className={styles.statValue}>
                       {batchResult.totalBudget.toLocaleString()} stroops
-                      <span className={styles.statSub}>
-                        ({batchResult.totalBudgetXLM} XLM)
-                      </span>
+                      <span className={styles.statSub}>({batchResult.totalBudgetXLM} XLM)</span>
                     </span>
                   </div>
                   <div className={styles.statRow}>
-                    <span className={styles.statLabel}>
-                      {t("feeEstimation.batchSafetyMargin")}
-                    </span>
+                    <span className={styles.statLabel}>{t('feeEstimation.batchSafetyMargin')}</span>
                     <span className={styles.statValue}>
                       {batchResult.safetyMargin}×
                       <span className={styles.statSub}>
-                        ({congestionLabel(batchResult.congestionLevel)}{" "}
-                        congestion)
+                        ({congestionLabel(batchResult.congestionLevel)} congestion)
                       </span>
                     </span>
                   </div>

@@ -54,7 +54,7 @@ export interface HorizonFeeStats {
 }
 
 /** High‑level congestion classification */
-export type CongestionLevel = "low" | "moderate" | "high";
+export type CongestionLevel = 'low' | 'moderate' | 'high';
 
 /** Processed fee recommendation for consumers */
 export interface FeeRecommendation {
@@ -117,9 +117,9 @@ export function stroopsToXLM(stroops: number): string {
  * - ≥ 0.75  → high
  */
 function deriveCongestionLevel(usage: number): CongestionLevel {
-  if (usage < 0.25) return "low";
-  if (usage < 0.75) return "moderate";
-  return "high";
+  if (usage < 0.25) return 'low';
+  if (usage < 0.75) return 'moderate';
+  return 'high';
 }
 
 /**
@@ -127,10 +127,8 @@ function deriveCongestionLevel(usage: number): CongestionLevel {
  * Falls back to the public Stellar testnet if the variable is not set.
  */
 function getHorizonUrl(): string {
-  const envUrl = import.meta.env.PUBLIC_STELLAR_HORIZON_URL as
-    | string
-    | undefined;
-  return envUrl?.replace(/\/+$/, "") || "https://horizon-testnet.stellar.org";
+  const envUrl = import.meta.env.PUBLIC_STELLAR_HORIZON_URL as string | undefined;
+  return envUrl?.replace(/\/+$/, '') || 'https://horizon-testnet.stellar.org';
 }
 
 // ---------------------------------------------------------------------------
@@ -145,9 +143,7 @@ export async function fetchFeeStats(): Promise<HorizonFeeStats> {
   const response = await fetch(url);
 
   if (!response.ok) {
-    throw new Error(
-      `Horizon fee_stats request failed: ${response.status} ${response.statusText}`,
-    );
+    throw new Error(`Horizon fee_stats request failed: ${response.status} ${response.statusText}`);
   }
 
   return response.json() as Promise<HorizonFeeStats>;
@@ -166,13 +162,13 @@ export async function getFeeRecommendation(): Promise<FeeRecommendation> {
   // Pick recommended fee based on congestion
   let recommendedFee: number;
   switch (congestionLevel) {
-    case "low":
+    case 'low':
       recommendedFee = Number(stats.fee_charged.p50);
       break;
-    case "moderate":
+    case 'moderate':
       recommendedFee = Number(stats.fee_charged.p70);
       break;
-    case "high":
+    case 'high':
       recommendedFee = Number(stats.fee_charged.p95);
       break;
   }
@@ -187,7 +183,7 @@ export async function getFeeRecommendation(): Promise<FeeRecommendation> {
     recommendedFee,
     maxFee,
     congestionLevel,
-    shouldBumpFee: congestionLevel === "high",
+    shouldBumpFee: congestionLevel === 'high',
     ledgerCapacityUsage,
     lastLedger: Number(stats.last_ledger),
     recommendedFeeXLM: stroopsToXLM(recommendedFee),
@@ -205,7 +201,7 @@ export async function getFeeRecommendation(): Promise<FeeRecommendation> {
  * - High              → 1.5×
  */
 export async function estimateBatchPaymentBudget(
-  transactionCount: number,
+  transactionCount: number
 ): Promise<BatchBudgetEstimate> {
   const recommendation = await getFeeRecommendation();
   const margin = SAFETY_MARGIN[recommendation.congestionLevel];

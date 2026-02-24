@@ -1,41 +1,26 @@
-import React, { createContext, useContext, useCallback } from "react";
-import { toast } from "sonner";
+import React, { useCallback } from 'react';
+import { toast } from 'sonner';
+import { NotificationContext } from '../hooks/useNotification';
 
-interface NotificationContextType {
-  notify: (message: string) => void;
-  notifySuccess: (message: string, description?: string) => void;
-  notifyError: (message: string, description?: string) => void;
-}
-
-const NotificationContext = createContext<NotificationContextType | undefined>(
-  undefined,
-);
-
-export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const notify = useCallback((message: string) => {
-    toast(message);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
+    (toast as any)(message);
   }, []);
 
   const notifySuccess = useCallback((message: string, description?: string) => {
-    toast.success(message, { description });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
+    (toast as any).success(message, { description });
   }, []);
 
   const notifyError = useCallback((message: string, description?: string) => {
-    toast.error(message, { description });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
+    (toast as any).error(message, { description });
   }, []);
 
   return (
-    <NotificationContext.Provider value={{ notify, notifySuccess, notifyError }}>
+    <NotificationContext value={{ notify, notifySuccess, notifyError }}>
       {children}
-    </NotificationContext.Provider>
+    </NotificationContext>
   );
-};
-
-export const useNotification = () => {
-  const context = useContext(NotificationContext);
-  if (!context)
-    throw new Error("useNotification must be used within NotificationProvider");
-  return context;
 };

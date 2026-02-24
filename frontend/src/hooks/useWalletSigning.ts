@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useWallet } from "../providers/WalletProvider";
+import { useState } from 'react';
+import { useWallet } from './useWallet';
 
 /**
  * Convenience hook for signing Stellar transactions via the connected wallet.
@@ -21,7 +21,7 @@ export function useWalletSigning() {
       const signedXdr = await signTransaction(xdr);
       return signedXdr;
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Signing failed";
+      const message = e instanceof Error ? e.message : 'Signing failed';
       setError(message);
       throw e;
     } finally {

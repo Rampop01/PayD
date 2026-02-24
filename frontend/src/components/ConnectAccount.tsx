@@ -1,10 +1,9 @@
-import React from "react";
-import { useWallet } from "../providers/WalletProvider";
-import { useTranslation } from "react-i18next";
+import React from 'react';
+import { useWallet } from '../hooks/useWallet';
+import { useTranslation } from 'react-i18next';
 
 const ConnectAccount: React.FC = () => {
-  const { address, walletName, isConnecting, connect, disconnect } =
-    useWallet();
+  const { address, walletName, isConnecting, connect, disconnect } = useWallet();
   const { t } = useTranslation();
 
   if (address) {
@@ -17,7 +16,7 @@ const ConnectAccount: React.FC = () => {
             </span>
           )}
           <span className="text-[10px] uppercase tracking-widest text-muted font-mono leading-none mb-1">
-            {t("connectAccount.authenticated")}
+            {t('connectAccount.authenticated')}
           </span>
           <span className="text-xs text-accent font-mono leading-none">
             {address.substring(0, 6)}...{address.substring(address.length - 4)}
@@ -29,7 +28,7 @@ const ConnectAccount: React.FC = () => {
           }}
           className="px-4 py-2 glass border-hi text-xs font-bold rounded-lg hover:bg-danger/10 hover:border-danger/30 hover:text-danger transition-all uppercase tracking-wider"
         >
-          {t("connectAccount.exit")}
+          {t('connectAccount.exit')}
         </button>
       </div>
     );
@@ -46,14 +45,12 @@ const ConnectAccount: React.FC = () => {
       {isConnecting ? (
         <span className="flex items-center gap-2">
           <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          {t("connectAccount.connecting") || "Connecting..."}
+          {t('connectAccount.connecting') || 'Connecting...'}
         </span>
       ) : (
         <>
-          {t("connectAccount.connect")}{" "}
-          <span className="hidden sm:inline">
-            {t("connectAccount.wallet")}
-          </span>
+          {t('connectAccount.connect')}{' '}
+          <span className="hidden sm:inline">{t('connectAccount.wallet')}</span>
         </>
       )}
     </button>

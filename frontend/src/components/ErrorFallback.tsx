@@ -1,6 +1,6 @@
-import { Icon } from "@stellar/design-system";
-import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { Icon } from '@stellar/design-system';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 type ErrorFallbackProps = {
   title?: string;
@@ -8,16 +8,11 @@ type ErrorFallbackProps = {
   onReset?: () => void;
 };
 
-export default function ErrorFallback({
-  title,
-  description,
-  onReset,
-}: ErrorFallbackProps) {
+export default function ErrorFallback({ title, description, onReset }: ErrorFallbackProps) {
   const { t } = useTranslation();
 
-  const resolvedTitle = title ?? t("errorFallback.defaultTitle");
-  const resolvedDescription =
-    description ?? t("errorFallback.defaultDescription");
+  const resolvedTitle = title ?? t('errorFallback.defaultTitle');
+  const resolvedDescription = description ?? t('errorFallback.defaultDescription');
 
   return (
     <div className="flex-1 flex items-center justify-center p-8">
@@ -34,14 +29,14 @@ export default function ErrorFallback({
               onClick={onReset}
               className="px-4 py-2 rounded-lg bg-accent text-bg font-semibold text-sm hover:scale-105 transition-transform"
             >
-              {t("errorFallback.tryAgain")}
+              {t('errorFallback.tryAgain')}
             </button>
           )}
           <Link
             to="/"
             className="px-4 py-2 rounded-lg border border-hi text-sm font-medium text-text hover:bg-white/5 transition-colors"
           >
-            {t("errorFallback.goHome")}
+            {t('errorFallback.goHome')}
           </Link>
         </div>
       </div>

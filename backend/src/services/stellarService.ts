@@ -1,4 +1,5 @@
 import {
+    Account,
     Horizon,
     Networks,
     Keypair,
@@ -128,7 +129,7 @@ export class StellarService {
 
     static async submitTransaction(transaction: Transaction): Promise<TransactionResult> {
         const server = this.getServer();
-        
+
         try {
             const result = await server.submitTransaction(transaction);
             return {
@@ -165,7 +166,7 @@ export class StellarService {
                 }),
                 ...config.signers
                     .filter(s => s.publicKey !== sourceKeypair.publicKey())
-                    .map(signer => 
+                    .map(signer =>
                         Operation.setOptions({
                             signer: {
                                 ed25519PublicKey: signer.publicKey,
@@ -246,21 +247,9 @@ export class StellarService {
     ): Promise<Transaction> {
         const server = this.getServer();
         const networkPassphrase = this.getNetworkPassphrase();
-        
+
         const account = await server.loadAccount(sourcePublicKey);
-        const customAccount = new Horizon.AccountResponse(
-            {
-                account_id: sourcePublicKey,
-                sequence: sequenceNumber,
-                balances: [],
-                signers: [],
-                data: {},
-                thresholds: { low_threshold: 0, med_threshold: 0, high_threshold: 0 },
-                flags: { auth_required: false, auth_revocable: false, auth_immutable: false },
-                subentry_count: 0,
-            },
-            server
-        );
+        const customAccount = new Account(sourcePublicKey, sequenceNumber);
 
         const builder = new TransactionBuilder(customAccount, {
             fee: options.fee || "100",
@@ -294,7 +283,7 @@ export class StellarService {
         return new Transaction(xdrBase64, this.getNetworkPassphrase());
     }
 
-    static async getAccountSigners(publicKey: string): Promise<Horizon.AccountSignerRecord[]> {
+    static async getAccountSigners(publicKey: string): Promise<any[]> {
         const server = this.getServer();
         const account = await server.loadAccount(publicKey);
         return account.signers;

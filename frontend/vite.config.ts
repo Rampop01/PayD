@@ -1,8 +1,8 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import wasm from "vite-plugin-wasm";
-import { nodePolyfills } from "vite-plugin-node-polyfills";
-import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import wasm from 'vite-plugin-wasm';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import tailwindcss from '@tailwindcss/vite';
 
 // https://vite.dev/config/
 export default defineConfig(() => {
@@ -11,7 +11,7 @@ export default defineConfig(() => {
       react(),
       tailwindcss(),
       nodePolyfills({
-        include: ["buffer"],
+        include: ['buffer'],
         globals: {
           Buffer: true,
         },
@@ -19,19 +19,19 @@ export default defineConfig(() => {
       wasm(),
     ],
     build: {
-      target: "esnext",
+      target: 'esnext',
     },
     optimizeDeps: {
-      exclude: ["@stellar/stellar-xdr-json"],
+      exclude: ['@stellar/stellar-xdr-json'],
     },
     define: {
-      global: "window",
+      global: 'window',
     },
-    envPrefix: "PUBLIC_",
+    envPrefix: 'PUBLIC_',
     server: {
       proxy: {
-        "/friendbot": {
-          target: "http://localhost:8000/friendbot",
+        '/friendbot': {
+          target: 'http://localhost:8000/friendbot',
           changeOrigin: true,
         },
       },

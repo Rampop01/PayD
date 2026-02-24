@@ -38,4 +38,11 @@ router.patch('/:id', authorizeRoles('EMPLOYER'), isolateOrganization, employeeCo
  */
 router.delete('/:id', authorizeRoles('EMPLOYER'), isolateOrganization, employeeController.delete.bind(employeeController));
 
+/**
+ * @route POST /api/employees/bulk-import
+ * @desc Bulk import employees from CSV
+ */
+import { bulkImportController } from '../controllers/bulkImportController';
+router.post('/bulk-import', bulkImportController.import.bind(bulkImportController));
+
 export default router;

@@ -7,14 +7,14 @@
  * Issue: https://github.com/Gildado/PayD/issues/41
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback } from 'react';
 import {
   simulateTransaction,
   simulateBatchTransactions,
   summarizeBatchSimulation,
   type SimulationResult,
   type SimulationOptions,
-} from "../services/transactionSimulation";
+} from '../services/transactionSimulation';
 
 export function useTransactionSimulation() {
   const [isSimulating, setIsSimulating] = useState(false);
@@ -38,7 +38,7 @@ export function useTransactionSimulation() {
       setResult(simResult);
       return simResult;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Simulation failed";
+      const message = err instanceof Error ? err.message : 'Simulation failed';
       setError(message);
       return null;
     } finally {
@@ -49,29 +49,25 @@ export function useTransactionSimulation() {
   /**
    * Simulates a batch of transactions.
    */
-  const simulateBatch = useCallback(
-    async (xdrs: string[], horizonUrl?: string) => {
-      setIsSimulating(true);
-      setError(null);
-      setResult(null);
-      setBatchResult(null);
+  const simulateBatch = useCallback(async (xdrs: string[], horizonUrl?: string) => {
+    setIsSimulating(true);
+    setError(null);
+    setResult(null);
+    setBatchResult(null);
 
-      try {
-        const results = await simulateBatchTransactions(xdrs, horizonUrl);
-        const summary = summarizeBatchSimulation(results);
-        setBatchResult(summary);
-        return summary;
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Batch simulation failed";
-        setError(message);
-        return null;
-      } finally {
-        setIsSimulating(false);
-      }
-    },
-    [],
-  );
+    try {
+      const results = await simulateBatchTransactions(xdrs, horizonUrl);
+      const summary = summarizeBatchSimulation(results);
+      setBatchResult(summary);
+      return summary;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Batch simulation failed';
+      setError(message);
+      return null;
+    } finally {
+      setIsSimulating(false);
+    }
+  }, []);
 
   /**
    * Resets the simulation state.

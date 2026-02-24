@@ -1,4 +1,4 @@
-import { Keypair, Operation, Asset, Claimant } from "@stellar/stellar-sdk";
+import { Keypair, Operation, Asset, Claimant } from '@stellar/stellar-sdk';
 
 export interface ClaimableBalanceDetails {
   id: string;
@@ -21,8 +21,8 @@ export const createClaimableBalanceTransaction = (
   sourceSecretKey: string,
   claimantPublicKey: string,
   amount: string,
-  assetCode: string = "USDC",
-  assetIssuer?: string,
+  assetCode: string = 'USDC',
+  assetIssuer?: string
 ) => {
   // Mock building the transaction as we don't have the full Stellar infrastructure initialized right now
   try {
@@ -39,7 +39,7 @@ export const createClaimableBalanceTransaction = (
     // Instead of actually building a complete hashable tx, let's just return a simulated payload
     // since we do not have a working horizon server to query sequence numbers.
     const asset =
-      assetCode === "XLM"
+      assetCode === 'XLM'
         ? Asset.native()
         : new Asset(assetCode, assetIssuer || Keypair.random().publicKey());
 
@@ -49,12 +49,12 @@ export const createClaimableBalanceTransaction = (
       claimants: [
         new Claimant(
           claimantPublicKey,
-          Claimant.predicateUnconditional(), // Employee can claim whenever they want
+          Claimant.predicateUnconditional() // Employee can claim whenever they want
         ),
       ],
     });
 
-    console.log("Simulating Claimable Balance Operation:", operation);
+    console.log('Simulating Claimable Balance Operation:', operation);
 
     // Normally we would build this into a transaction, sign it, and submit it to Horizon.
     return {
@@ -64,7 +64,7 @@ export const createClaimableBalanceTransaction = (
       claimantPublicKey,
     };
   } catch (error) {
-    console.error("Error creating claimable balance transaction:", error);
+    console.error('Error creating claimable balance transaction:', error);
     return {
       success: false,
       error,

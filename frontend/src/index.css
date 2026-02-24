@@ -1,6 +1,6 @@
-@import url("https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=Inter:wght@100..900&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=Inter:wght@100..900&display=swap');
 
-@import "tailwindcss";
+@import 'tailwindcss';
 
 *,
 *::before,
@@ -9,7 +9,7 @@
 }
 
 :root,
-[data-theme="dark"] {
+[data-theme='dark'] {
   --bg: #080b10;
   --surface: #0d1117;
   --surface-hi: #161b22;
@@ -22,13 +22,13 @@
   --danger: #ff7b72;
   --success: #3fb950;
   --header-h: 64px;
-  --font-head: "Syne", sans-serif;
-  --font-body: "Inter", sans-serif;
-  --font-mono: "DM Mono", monospace;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'DM Mono', monospace;
   color-scheme: dark;
 }
 
-[data-theme="light"] {
+[data-theme='light'] {
   --bg: #f6f8fa;
   --surface: #ffffff;
   --surface-hi: #f0f2f5;
@@ -41,9 +41,9 @@
   --danger: #d1242f;
   --success: #1a7f37;
   --header-h: 64px;
-  --font-head: "Syne", sans-serif;
-  --font-body: "Inter", sans-serif;
-  --font-mono: "DM Mono", monospace;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'DM Mono', monospace;
   color-scheme: light;
 }
 
@@ -64,7 +64,7 @@ h4,
 h5,
 h6 {
   font-family: var(--font-head);
-  font-variation-settings: "wght" 600;
+  font-variation-settings: 'wght' 600;
 }
 
 /* ── Scrollbar ── */
@@ -89,7 +89,7 @@ h6 {
   border-radius: 12px;
 }
 
-[data-theme="light"] .glass {
+[data-theme='light'] .glass {
   background: rgba(255, 255, 255, 0.7);
 }
 
@@ -98,7 +98,7 @@ h6 {
 }
 
 .noise::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");

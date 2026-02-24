@@ -6,7 +6,8 @@ import {
 } from '../schemas/employeeSchema';
 
 export class EmployeeService {
-  async create(data: CreateEmployeeInput) {
+  async create(data: CreateEmployeeInput, dbClient?: any) {
+    const executor = dbClient || pool;
     const {
       organization_id,
       first_name,
@@ -16,13 +17,15 @@ export class EmployeeService {
       position,
       department,
       status,
+      base_salary,
+      base_currency,
     } = data;
 
     const query = `
       INSERT INTO employees (
-        organization_id, first_name, last_name, email, wallet_address, position, department, status
+        organization_id, first_name, last_name, email, wallet_address, position, department, status, base_salary, base_currency
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *;
     `;
 
@@ -35,9 +38,11 @@ export class EmployeeService {
       position || null,
       department || null,
       status || 'active',
+      base_salary || 0,
+      base_currency || 'USDC',
     ];
 
-    const result = await pool.query(query, values);
+    const result = await executor.query(query, values);
     return result.rows[0];
   }
 

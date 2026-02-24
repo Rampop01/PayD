@@ -1,56 +1,56 @@
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 
 const docs = [
   {
-    category: "FAQs",
+    category: 'FAQs',
     items: [
       {
-        question: "How do I add an employee?",
+        question: 'How do I add an employee?',
         answer:
           "Go to the Employees page and click 'Add Employee'. Fill in the required details and save.",
       },
       {
-        question: "How do I reset my password?",
+        question: 'How do I reset my password?',
         answer:
           "Click your profile in the sidebar, then select 'Reset Password' and follow the instructions.",
       },
     ],
   },
   {
-    category: "Stellar Concepts",
+    category: 'Stellar Concepts',
     items: [
       {
-        question: "What is a trustline?",
+        question: 'What is a trustline?',
         answer:
-          "A trustline is a permission you grant to hold a specific asset on the Stellar network.",
+          'A trustline is a permission you grant to hold a specific asset on the Stellar network.',
       },
       {
-        question: "What is an anchor?",
+        question: 'What is an anchor?',
         answer:
-          "An anchor is an entity that issues assets and connects the Stellar network to traditional banking.",
+          'An anchor is an entity that issues assets and connects the Stellar network to traditional banking.',
       },
     ],
   },
   {
-    category: "Troubleshooting",
+    category: 'Troubleshooting',
     items: [
       {
-        question: "Payroll failed to send.",
+        question: 'Payroll failed to send.',
         answer:
-          "Check your account balance and trustlines. Ensure all employees have valid Stellar addresses.",
+          'Check your account balance and trustlines. Ensure all employees have valid Stellar addresses.',
       },
       {
-        question: "Employee not receiving payments.",
+        question: 'Employee not receiving payments.',
         answer:
-          "Verify the employee’s Stellar address and that they have established the necessary trustlines.",
+          'Verify the employee’s Stellar address and that they have established the necessary trustlines.',
       },
     ],
   },
 ];
 
 export default function HelpCenter() {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [openItem, setOpenItem] = useState<string | null>(null);
 
   const toggleItem = (id: string) => {
@@ -63,7 +63,7 @@ export default function HelpCenter() {
       items: section.items.filter(
         (item) =>
           item.question.toLowerCase().includes(search.toLowerCase()) ||
-          item.answer.toLowerCase().includes(search.toLowerCase()),
+          item.answer.toLowerCase().includes(search.toLowerCase())
       ),
     }))
     .filter((section) => section.items.length > 0);
@@ -121,9 +121,7 @@ export default function HelpCenter() {
                       >
                         <span>{item.question}</span>
                         <ChevronDown
-                          className={`w-4 h-4 transition-transform ${
-                            isOpen ? "rotate-180" : ""
-                          }`}
+                          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
                         />
                       </button>
 

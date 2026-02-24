@@ -6,7 +6,7 @@
  * Issue: https://github.com/Gildado/PayD/issues/42
  */
 
-import { FeeEstimationPanel } from "../components/FeeEstimationPanel";
+import { FeeEstimationPanel } from '../components/FeeEstimationPanel';
 
 export default function FeeEstimation() {
   return <FeeEstimationPanel />;

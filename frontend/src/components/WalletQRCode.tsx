@@ -1,7 +1,8 @@
-import React, { useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
-import { Icon, Button } from "@stellar/design-system";
-import { useNotification } from "../providers/NotificationProvider";
+import React, { useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
+import { Button } from '@stellar/design-system';
+import { Copy, Key, Eye, BookOpen, ChevronDown, Coins } from 'lucide-react';
+import { useNotification } from '../hooks/useNotification';
 
 interface WalletQRCodeProps {
   walletAddress: string;
@@ -12,25 +13,24 @@ interface WalletQRCodeProps {
 const TRUSTLINE_STEPS = [
   {
     step: 1,
-    title: "Fund Your Wallet",
-    description:
-      "Add XLM to your wallet. You need at least 1 XLM to create a trustline.",
+    title: 'Fund Your Wallet',
+    description: 'Add XLM to your wallet. You need at least 1 XLM to create a trustline.',
   },
   {
     step: 2,
-    title: "Choose Your Asset",
+    title: 'Choose Your Asset',
     description:
-      "Decide which asset you want to receive (USDC, EURC, or XLM). Each asset requires a separate trustline.",
+      'Decide which asset you want to receive (USDC, EURC, or XLM). Each asset requires a separate trustline.',
   },
   {
     step: 3,
-    title: "Create Trustline",
+    title: 'Create Trustline',
     description:
       "Navigate to your wallet's asset settings and add a trustline for the chosen asset using its issuer address.",
   },
   {
     step: 4,
-    title: "Verify Trustline",
+    title: 'Verify Trustline',
     description:
       "After creation, verify the trustline appears in your wallet's asset list. You can now receive payments in that asset.",
   },
@@ -38,19 +38,19 @@ const TRUSTLINE_STEPS = [
 
 const ASSET_INFO = [
   {
-    code: "USDC",
-    issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
-    network: "Stellar Mainnet",
+    code: 'USDC',
+    issuer: 'GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN',
+    network: 'Stellar Mainnet',
   },
   {
-    code: "EURC",
-    issuer: "GDHU6WRG4IEQXM5NZ4BMPKOXHW76MZM4Y2IEMFDVXCWDQWZ4FIT6JGNG",
-    network: "Stellar Mainnet",
+    code: 'EURC',
+    issuer: 'GDHU6WRG4IEQXM5NZ4BMPKOXHW76MZM4Y2IEMFDVXCWDQWZ4FIT6JGNG',
+    network: 'Stellar Mainnet',
   },
   {
-    code: "XLM",
-    issuer: "Native",
-    network: "Stellar Mainnet",
+    code: 'XLM',
+    issuer: 'Native',
+    network: 'Stellar Mainnet',
   },
 ];
 
@@ -68,11 +68,11 @@ export const WalletQRCode: React.FC<WalletQRCodeProps> = ({
       await navigator.clipboard.writeText(text);
       notifySuccess(`${label} copied to clipboard!`);
     } catch {
-      const textArea = document.createElement("textarea");
+      const textArea = document.createElement('textarea');
       textArea.value = text;
       document.body.appendChild(textArea);
       textArea.select();
-      document.execCommand("copy");
+      document.execCommand('copy');
       document.body.removeChild(textArea);
       notifySuccess(`${label} copied to clipboard!`);
     }
@@ -86,18 +86,11 @@ export const WalletQRCode: React.FC<WalletQRCodeProps> = ({
   return (
     <div className="space-y-6">
       <div className="bg-surface rounded-xl p-6 border border-hi">
-        <h3 className="text-lg font-bold mb-4 text-text">
-          Your Stellar Wallet Address
-        </h3>
+        <h3 className="text-lg font-bold mb-4 text-text">Your Stellar Wallet Address</h3>
 
         <div className="flex flex-col md:flex-row gap-6 items-center">
           <div className="bg-white p-4 rounded-lg">
-            <QRCodeSVG
-              value={walletAddress}
-              size={160}
-              level="H"
-              includeMargin={false}
-            />
+            <QRCodeSVG value={walletAddress} size={160} level="H" includeMargin={false} />
           </div>
 
           <div className="flex-1 space-y-3">
@@ -115,16 +108,16 @@ export const WalletQRCode: React.FC<WalletQRCodeProps> = ({
             <Button
               variant="tertiary"
               size="md"
-              onClick={() => void copyToClipboard(walletAddress, "Wallet address")}
+              onClick={() => void copyToClipboard(walletAddress, 'Wallet address')}
             >
-              <Icon.Copy size="sm" />
+              <Copy size={16} className="mr-2" />
               Copy Address
             </Button>
 
             {secretKey && (
               <div className="mt-4">
                 <label className="text-sm text-yellow-500 font-mono uppercase tracking-wider flex items-center gap-2">
-                  <Icon.Key size="sm" />
+                  <Key size={16} className="mr-2" />
                   Secret Key (Save Securely!)
                 </label>
                 <div className="mt-1 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
@@ -136,9 +129,9 @@ export const WalletQRCode: React.FC<WalletQRCodeProps> = ({
                       <Button
                         variant="tertiary"
                         size="sm"
-                        onClick={() => void copyToClipboard(secretKey, "Secret key")}
+                        onClick={() => void copyToClipboard(secretKey, 'Secret key')}
                       >
-                        <Icon.Copy size="sm" />
+                        <Copy size={16} className="mr-2" />
                         Copy Secret Key
                       </Button>
                     </div>
@@ -147,7 +140,7 @@ export const WalletQRCode: React.FC<WalletQRCodeProps> = ({
                       onClick={() => setShowSecret(true)}
                       className="text-yellow-400 hover:text-yellow-300 text-sm flex items-center gap-2"
                     >
-                      <Icon.Eye size="sm" />
+                      <Eye size={16} className="mr-2" />
                       Click to reveal secret key
                     </button>
                   )}
@@ -160,34 +153,29 @@ export const WalletQRCode: React.FC<WalletQRCodeProps> = ({
 
       <div className="bg-surface rounded-xl p-6 border border-hi">
         <h3 className="text-lg font-bold mb-4 text-text flex items-center gap-2">
-          <Icon.BookOpen size="md" />
+          <BookOpen size={20} className="mr-2" />
           Trustline Setup Guide
         </h3>
         <p className="text-muted text-sm mb-4">
-          To receive payments in different currencies, you need to set up
-          trustlines. Follow these steps:
+          To receive payments in different currencies, you need to set up trustlines. Follow these
+          steps:
         </p>
 
         <div className="space-y-3">
           {TRUSTLINE_STEPS.map((item) => (
-            <div
-              key={item.step}
-              className="border border-hi rounded-lg overflow-hidden"
-            >
+            <div key={item.step} className="border border-hi rounded-lg overflow-hidden">
               <button
-                onClick={() =>
-                  setExpandedStep(expandedStep === item.step ? null : item.step)
-                }
+                onClick={() => setExpandedStep(expandedStep === item.step ? null : item.step)}
                 className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-bg-secondary transition-colors"
               >
                 <span className="w-8 h-8 rounded-full bg-accent/20 text-accent font-bold flex items-center justify-center text-sm">
                   {item.step}
                 </span>
                 <span className="font-semibold text-text">{item.title}</span>
-                <Icon.ChevronDown
-                  size="sm"
+                <ChevronDown
+                  size={16}
                   className={`ml-auto transition-transform ${
-                    expandedStep === item.step ? "rotate-180" : ""
+                    expandedStep === item.step ? 'rotate-180' : ''
                   }`}
                 />
               </button>
@@ -203,32 +191,27 @@ export const WalletQRCode: React.FC<WalletQRCodeProps> = ({
 
       <div className="bg-surface rounded-xl p-6 border border-hi">
         <h3 className="text-lg font-bold mb-4 text-text flex items-center gap-2">
-          <Icon.Coins size="md" />
+          <Coins size={20} className="mr-2" />
           Supported Assets
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {ASSET_INFO.map((asset) => (
-            <div
-              key={asset.code}
-              className="p-4 bg-bg-secondary rounded-lg border border-hi"
-            >
-              <div className="font-bold text-accent text-lg mb-2">
-                {asset.code}
-              </div>
+            <div key={asset.code} className="p-4 bg-bg-secondary rounded-lg border border-hi">
+              <div className="font-bold text-accent text-lg mb-2">{asset.code}</div>
               <div className="text-xs text-muted font-mono">
                 <div className="mb-1">
                   <span className="text-text-secondary">Issuer:</span>
                 </div>
                 <div className="break-all">
-                  {asset.issuer === "Native" ? (
-                    "Native Asset"
+                  {asset.issuer === 'Native' ? (
+                    'Native Asset'
                   ) : (
                     <button
                       onClick={() => void copyToClipboard(asset.issuer, `${asset.code} issuer`)}
                       className="hover:text-accent transition-colors"
                     >
                       {truncateAddress(asset.issuer)}
-                      <Icon.Copy size="xs" className="inline ml-1" />
+                      <Copy size={12} className="inline ml-1" />
                     </button>
                   )}
                 </div>
@@ -240,8 +223,8 @@ export const WalletQRCode: React.FC<WalletQRCodeProps> = ({
 
       {employeeName && (
         <div className="text-center text-sm text-muted">
-          Share this QR code with {employeeName} so they can receive payments
-          directly to their wallet.
+          Share this QR code with {employeeName} so they can receive payments directly to their
+          wallet.
         </div>
       )}
     </div>

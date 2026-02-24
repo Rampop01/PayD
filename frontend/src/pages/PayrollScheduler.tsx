@@ -1,20 +1,20 @@
-import React, { useEffect, useState } from "react";
-import { AutosaveIndicator } from "../components/AutosaveIndicator";
-import { useAutosave } from "../hooks/useAutosave";
-import { useTransactionSimulation } from "../hooks/useTransactionSimulation";
-import { TransactionSimulationPanel } from "../components/TransactionSimulationPanel";
-import { useNotification } from "../providers/NotificationProvider";
-import { useSocket } from "../providers/SocketProvider";
-import { generateWallet } from "../services/stellar";
-import { useTranslation } from "react-i18next";
-import { Card } from "@stellar/design-system";
-import { SchedulingWizard } from "../components/SchedulingWizard";
-import { CountdownTimer } from "../components/CountdownTimer";
+import React, { useEffect, useState } from 'react';
+import { AutosaveIndicator } from '../components/AutosaveIndicator';
+import { useAutosave } from '../hooks/useAutosave';
+import { useTransactionSimulation } from '../hooks/useTransactionSimulation';
+import { TransactionSimulationPanel } from '../components/TransactionSimulationPanel';
+import { useNotification } from '../hooks/useNotification';
+import { useSocket } from '../hooks/useSocket';
+import { generateWallet } from '../services/stellar';
+import { useTranslation } from 'react-i18next';
+import { Card } from '@stellar/design-system';
+import { SchedulingWizard } from '../components/SchedulingWizard';
+import { CountdownTimer } from '../components/CountdownTimer';
 
 interface PayrollFormState {
   employeeName: string;
   amount: string;
-  frequency: "weekly" | "monthly";
+  frequency: 'weekly' | 'monthly';
   startDate: string;
   memo?: string;
 }
@@ -29,11 +29,11 @@ interface PendingClaim {
 }
 
 const initialFormState: PayrollFormState = {
-  employeeName: "",
-  amount: "",
-  frequency: "monthly",
-  startDate: "",
-  memo: "",
+  employeeName: '',
+  amount: '',
+  frequency: 'monthly',
+  startDate: '',
+  memo: '',
 };
 
 export default function PayrollScheduler() {
@@ -43,11 +43,14 @@ export default function PayrollScheduler() {
   const [formData, setFormData] = useState<PayrollFormState>(initialFormState);
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [activeSchedule, setActiveSchedule] = useState<any>(null);
+  const [activeSchedule, setActiveSchedule] = useState<{
+    frequency: string;
+    timeOfDay: string;
+  } | null>(null);
   const [nextRunDate, setNextRunDate] = useState<Date | null>(null);
 
   const [pendingClaims, setPendingClaims] = useState<PendingClaim[]>(() => {
-    const saved = localStorage.getItem("pending-claims");
+    const saved = localStorage.getItem('pending-claims');
     if (saved) {
       try {
         return JSON.parse(saved) as PendingClaim[];
@@ -59,8 +62,8 @@ export default function PayrollScheduler() {
   });
 
   const { saving, lastSaved, loadSavedData } = useAutosave<PayrollFormState>(
-    "payroll-scheduler-draft",
-    formData,
+    'payroll-scheduler-draft',
+    formData
   );
 
   const {
@@ -79,10 +82,13 @@ export default function PayrollScheduler() {
     }
   }, [loadSavedData]);
 
-  const handleScheduleComplete = (config: any) => {
+  const handleScheduleComplete = (config: { frequency: string; timeOfDay: string }) => {
     setActiveSchedule(config);
     setIsWizardOpen(false);
-    notifySuccess("Payroll schedule configured!", `Frequency: ${config.frequency}, time: ${config.timeOfDay}`);
+    notifySuccess(
+      'Payroll schedule configured!',
+      `Frequency: ${config.frequency}, time: ${config.timeOfDay}`
+    );
 
     // Compute next run for countdown demo
     const d = new Date();
@@ -94,9 +100,7 @@ export default function PayrollScheduler() {
   };
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -106,18 +110,16 @@ export default function PayrollScheduler() {
   useEffect(() => {
     if (!socket) return;
 
-    const handleTransactionUpdate = (data: any) => {
-      console.log("Received transaction update:", data);
+    const handleTransactionUpdate = (data: { transactionId: string; status: string }) => {
+      console.log('Received transaction update:', data);
       setPendingClaims((prev) =>
         prev.map((claim) =>
-          claim.id === data.transactionId
-            ? { ...claim, status: data.status }
-            : claim
+          claim.id === data.transactionId ? { ...claim, status: data.status } : claim
         )
       );
-      
+
       if (data.status === 'confirmed') {
-        notifySuccess("Payment confirmed!", `TX: ${data.transactionId}`);
+        notifySuccess('Payment confirmed!', `TX: ${data.transactionId}`);
       }
     };
 
@@ -132,14 +134,14 @@ export default function PayrollScheduler() {
     e.preventDefault();
 
     if (!formData.employeeName || !formData.amount) {
-      notifyError("Missing required fields", "Please provide employee name and amount.");
+      notifyError('Missing required fields', 'Please provide employee name and amount.');
       return;
     }
 
     // Mock XDR for simulation demonstration
     // In a real app, this would be built using the Stellar SDK from formData
     const mockXdr =
-      "AAAAAgAAAABmF8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+      'AAAAAgAAAABmF8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
     await simulate({ envelopeXdr: mockXdr });
   };
@@ -155,24 +157,26 @@ export default function PayrollScheduler() {
         id: Math.random().toString(36).substr(2, 9),
         employeeName: formData.employeeName,
         amount: formData.amount,
-        dateScheduled:
-          formData.startDate || new Date().toISOString().split("T")[0],
+        dateScheduled: formData.startDate || new Date().toISOString().split('T')[0],
         claimantPublicKey: generateWallet().publicKey,
-        status: "Pending Claim",
+        status: 'Pending Claim',
       };
       const updatedClaims = [...pendingClaims, newClaim];
       setPendingClaims(updatedClaims);
-      localStorage.setItem("pending-claims", JSON.stringify(updatedClaims));
+      localStorage.setItem('pending-claims', JSON.stringify(updatedClaims));
 
       // Subscribe to updates for this new claim
       subscribeToTransaction(newClaim.id);
 
-      notifySuccess("Broadcast successful!", `Claimable balance created for ${formData.employeeName}`);
+      notifySuccess(
+        'Broadcast successful!',
+        `Claimable balance created for ${formData.employeeName}`
+      );
       resetSimulation();
       setFormData(initialFormState);
     } catch (err) {
       console.error(err);
-      notifyError("Broadcast failed", "Please check your network connection and try again.");
+      notifyError('Broadcast failed', 'Please check your network connection and try again.');
     } finally {
       setIsBroadcasting(false);
     }
@@ -182,7 +186,7 @@ export default function PayrollScheduler() {
     unsubscribeFromTransaction(id);
     const updatedClaims = pendingClaims.filter((c) => c.id !== id);
     setPendingClaims(updatedClaims);
-    localStorage.setItem("pending-claims", JSON.stringify(updatedClaims));
+    localStorage.setItem('pending-claims', JSON.stringify(updatedClaims));
   };
 
   return (
@@ -190,13 +194,11 @@ export default function PayrollScheduler() {
       <div className="w-full mb-12 flex items-end justify-between border-b border-hi pb-8">
         <div>
           <h1 className="text-4xl font-black mb-2 tracking-tight">
-            {t("payroll.title", "Payroll")}{" "}
-            <span className="text-accent">
-              {t("payroll.titleHighlight", "Scheduler")}
-            </span>
+            {t('payroll.title', 'Payroll')}{' '}
+            <span className="text-accent">{t('payroll.titleHighlight', 'Scheduler')}</span>
           </h1>
           <p className="text-muted font-mono text-sm tracking-wider uppercase">
-            {t("payroll.subtitle", "Automated distribution engine")}
+            {t('payroll.subtitle', 'Automated distribution engine')}
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
@@ -205,7 +207,19 @@ export default function PayrollScheduler() {
             onClick={() => setIsWizardOpen(true)}
             className="bg-accent/10 border border-accent/30 text-accent font-bold px-4 py-2 rounded-lg text-sm hover:bg-accent/20 transition-colors flex items-center gap-2"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
             Configure Automation
           </button>
         </div>
@@ -216,13 +230,30 @@ export default function PayrollScheduler() {
           <div className="absolute top-0 left-0 w-1 h-full bg-success"></div>
           <div>
             <h3 className="text-success font-black text-lg mb-1 flex items-center gap-2">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
               Automation Active
             </h3>
-            <p className="text-muted text-sm">Scheduled to run <span className="font-bold text-text capitalize">{activeSchedule.frequency}</span> at <span className="font-mono text-text">{activeSchedule.timeOfDay}</span></p>
+            <p className="text-muted text-sm">
+              Scheduled to run{' '}
+              <span className="font-bold text-text capitalize">{activeSchedule.frequency}</span> at{' '}
+              <span className="font-mono text-text">{activeSchedule.timeOfDay}</span>
+            </p>
           </div>
           <div className="bg-bg border border-hi rounded-xl p-4 shadow-inner">
-            <span className="block text-[10px] uppercase font-bold text-muted mb-2 tracking-widest text-center">Next Scheduled Run</span>
+            <span className="block text-[10px] uppercase font-bold text-muted mb-2 tracking-widest text-center">
+              Next Scheduled Run
+            </span>
             <CountdownTimer targetDate={nextRunDate} />
           </div>
         </div>
@@ -245,7 +276,7 @@ export default function PayrollScheduler() {
             >
               <div className="md:col-span-2">
                 <label className="block text-xs font-bold uppercase tracking-widest text-muted mb-3 ml-1">
-                  {t("payroll.employeeName", "Employee Name")}
+                  {t('payroll.employeeName', 'Employee Name')}
                 </label>
                 <input
                   type="text"
@@ -259,7 +290,7 @@ export default function PayrollScheduler() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-widest text-muted mb-3 ml-1">
-                  {t("payroll.amountLabel", "Amount (USD equivalent)")}
+                  {t('payroll.amountLabel', 'Amount (USD equivalent)')}
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted font-mono">
@@ -278,7 +309,7 @@ export default function PayrollScheduler() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-widest text-muted mb-3 ml-1">
-                  {t("payroll.distributionFrequency", "Distribution Frequency")}
+                  {t('payroll.distributionFrequency', 'Distribution Frequency')}
                 </label>
                 <select
                   name="frequency"
@@ -287,17 +318,17 @@ export default function PayrollScheduler() {
                   className="w-full bg-black/20 border border-hi rounded-xl p-4 text-text outline-none focus:border-accent/50 focus:bg-accent/5 transition-all appearance-none cursor-pointer"
                 >
                   <option value="weekly" className="bg-surface">
-                    {t("payroll.frequencyWeekly", "Weekly")}
+                    {t('payroll.frequencyWeekly', 'Weekly')}
                   </option>
                   <option value="monthly" className="bg-surface">
-                    {t("payroll.frequencyMonthly", "Monthly")}
+                    {t('payroll.frequencyMonthly', 'Monthly')}
                   </option>
                 </select>
               </div>
 
               <div className="md:col-span-2">
                 <label className="block text-xs font-bold uppercase tracking-widest text-muted mb-3 ml-1">
-                  {t("payroll.commencementDate", "Commencement Date")}
+                  {t('payroll.commencementDate', 'Commencement Date')}
                 </label>
                 <input
                   type="date"
@@ -329,8 +360,8 @@ export default function PayrollScheduler() {
                     className="w-full py-4 bg-accent text-bg font-black rounded-xl hover:scale-[1.01] transition-transform shadow-lg shadow-accent/10 uppercase tracking-widest text-sm flex items-center justify-center gap-2"
                   >
                     {isSimulating
-                      ? "Simulating..."
-                      : t("payroll.submit", "Initialize and Validate")}
+                      ? 'Simulating...'
+                      : t('payroll.submit', 'Initialize and Validate')}
                   </button>
                 ) : (
                   <button
@@ -341,9 +372,7 @@ export default function PayrollScheduler() {
                     disabled={isBroadcasting}
                     className="w-full py-4 bg-success text-bg font-black rounded-xl hover:scale-[1.01] transition-transform shadow-lg shadow-success/10 uppercase tracking-widest text-sm flex items-center justify-center gap-2"
                   >
-                    {isBroadcasting
-                      ? "Broadcasting..."
-                      : "Confirm & Broadcast to Network"}
+                    {isBroadcasting ? 'Broadcasting...' : 'Confirm & Broadcast to Network'}
                   </button>
                 )}
               </div>
@@ -378,8 +407,8 @@ export default function PayrollScheduler() {
                 Pre-flight Validation
               </h3>
               <p className="text-xs text-muted leading-relaxed mb-4">
-                All transactions are simulated via Stellar Horizon before
-                submission. This catches common errors like:
+                All transactions are simulated via Stellar Horizon before submission. This catches
+                common errors like:
               </p>
               <ul className="text-xs text-muted space-y-2 list-disc pl-4 font-medium">
                 <li>Insufficient XLM balance for fees</li>
