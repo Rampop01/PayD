@@ -13,7 +13,6 @@
   "workspaces": [
     "packages/*"
   ],
-  
   "dependencies": {
     "@creit.tech/stellar-wallets-kit": "^1.9.5",
     "@sentry/react": "^10.39.0",
