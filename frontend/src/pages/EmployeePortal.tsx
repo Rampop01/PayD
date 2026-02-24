@@ -21,7 +21,7 @@ import {
     getStellarExpertAccountLink,
 } from "../services/currencyConversion";
 import styles from "./EmployeePortal.module.css";
-import { useWallet } from "../providers/WalletProvider";
+import { useWallet } from "../hooks/useWallet";
 
 /* ── Helper: status badge ────────── */
 function StatusBadge({ status }: { status: EmployeeTransaction["status"] }) {

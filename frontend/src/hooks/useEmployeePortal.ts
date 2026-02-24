@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   fetchExchangeRates,
-  formatCurrency,
   getStellarExpertLink,
 } from "../services/currencyConversion";
 
