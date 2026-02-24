@@ -46,8 +46,8 @@ export class EmployeeService {
     return result.rows[0];
   }
 
-  async findAll(params: EmployeeQueryInput) {
-    const { page = 1, limit = 10, search, status, department, organization_id } = params;
+  async findAll(organization_id: number, params: EmployeeQueryInput) {
+    const { page = 1, limit = 10, search, status, department } = params;
     const offset = (page - 1) * limit;
 
     let query = `
@@ -108,16 +108,16 @@ export class EmployeeService {
     };
   }
 
-  async findById(id: number) {
+  async findById(id: number, organization_id: number) {
     const query = `
       SELECT * FROM employees
-      WHERE id = $1 AND deleted_at IS NULL
+      WHERE id = $1 AND organization_id = $2 AND deleted_at IS NULL
     `;
-    const result = await pool.query(query, [id]);
+    const result = await pool.query(query, [id, organization_id]);
     return result.rows[0] || null;
   }
 
-  async update(id: number, data: UpdateEmployeeInput) {
+  async update(id: number, organization_id: number, data: UpdateEmployeeInput) {
     const fields: string[] = [];
     const values: (string | number | null)[] = [];
     let paramIndex = 1;
@@ -131,11 +131,11 @@ export class EmployeeService {
 
     if (fields.length === 0) return null;
 
-    values.push(id);
+    values.push(id, organization_id);
     const query = `
       UPDATE employees
       SET ${fields.join(', ')}, updated_at = NOW()
-      WHERE id = $${paramIndex} AND deleted_at IS NULL
+      WHERE id = $${paramIndex++} AND organization_id = $${paramIndex} AND deleted_at IS NULL
       RETURNING *;
     `;
 
@@ -143,14 +143,14 @@ export class EmployeeService {
     return result.rows[0] || null;
   }
 
-  async delete(id: number) {
+  async delete(id: number, organization_id: number) {
     const query = `
       UPDATE employees
       SET deleted_at = NOW(), status = 'inactive'
-      WHERE id = $1 AND deleted_at IS NULL
+      WHERE id = $1 AND organization_id = $2 AND deleted_at IS NULL
       RETURNING *;
     `;
-    const result = await pool.query(query, [id]);
+    const result = await pool.query(query, [id, organization_id]);
     return result.rows[0] || null;
   }
 }
