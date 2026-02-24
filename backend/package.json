@@ -1,0 +1,27 @@
+{
+    "name": "payd-backend",
+    "version": "1.0.0",
+    "description": "PayD Backend API",
+    "main": "dist/index.js",
+    "scripts": {
+        "start": "node dist/index.js",
+        "dev": "tsx watch src/index.ts",
+        "build": "tsc"
+    },
+    "dependencies": {
+        "axios": "^1.7.9",
+        "cors": "^2.8.5",
+        "crypto-js": "^4.2.0",
+        "dotenv": "^16.4.7",
+        "express": "^4.21.2",
+        "zod": "^3.24.2"
+    },
+    "devDependencies": {
+        "@types/cors": "^2.8.17",
+        "@types/crypto-js": "^4.2.2",
+        "@types/express": "^5.0.0",
+        "@types/node": "^22.13.5",
+        "tsx": "^4.19.3",
+        "typescript": "^5.7.3"
+    }
+}
