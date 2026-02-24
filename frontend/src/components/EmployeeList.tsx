@@ -59,7 +59,9 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
           <tr className="border-b border-hi">
             <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">Employee</th>
             <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">Role</th>
-            <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">Wallet Address</th>
+            <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">
+              Wallet Address
+            </th>
             <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">Status</th>
             <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">Actions</th>
           </tr>
@@ -95,14 +97,16 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
                 </td>
                 <td className="p-6">
                   <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${employee.status === 'Active'
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                      employee.status === 'Active'
                         ? 'bg-green-100 text-green-600 border-green-200'
                         : 'bg-red-100 text-red-600 border-red-200'
-                      }`}
+                    }`}
                   >
                     <div
-                      className={`w-1 h-1 rounded-full ${employee.status === 'Active' ? 'bg-green-600' : 'bg-red-600'
-                        }`}
+                      className={`w-1 h-1 rounded-full ${
+                        employee.status === 'Active' ? 'bg-green-600' : 'bg-red-600'
+                      }`}
                     />
                     {employee.status || '-'}
                   </span>
@@ -142,7 +146,10 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
                 Add Employees from CSV
               </button>
               <button
-                onClick={() => { setShowCSVUploader(false); setCsvData([]); }}
+                onClick={() => {
+                  setShowCSVUploader(false);
+                  setCsvData([]);
+                }}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded"
               >
                 Cancel

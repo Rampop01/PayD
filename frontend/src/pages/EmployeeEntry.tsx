@@ -154,7 +154,10 @@ export default function EmployeeEntry() {
             marginBottom: '1.5rem',
           }}
         >
-          <div className='cursor-pointer' style={{  display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div
+            className="cursor-pointer"
+            style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}
+          >
             <button
               onClick={() => setIsAdding(false)}
               className="text-muted cursor-pointer hover:text-text transition-colors"
@@ -274,7 +277,7 @@ export default function EmployeeEntry() {
       <EmployeeList
         employees={mockEmployees}
         onEmployeeClick={(employee) => console.log('Clicked:', employee.name)}
-        onAddEmployee={(employee) => console.log('Added:', employee)} 
+        onAddEmployee={(employee) => console.log('Added:', employee)}
       />
     </div>
   );

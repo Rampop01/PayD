@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-<<<<<<< HEAD
-import { Code, User, Wallet, FileText, Globe, LayoutDashboard, Activity } from 'lucide-react';
-=======
-import { Code, User, Wallet, FileText, Globe, Menu, X } from 'lucide-react';
->>>>>>> d6c8a67 (feat(csv-upload): implement CSV upload with validation preview table)
+import {
+  Code,
+  User,
+  Wallet,
+  FileText,
+  Globe,
+  LayoutDashboard,
+  Activity,
+  Menu,
+  X,
+} from 'lucide-react';
 import { Avatar } from './Avatar';
 
 const AppNav: React.FC = () => {
@@ -103,7 +109,6 @@ const AppNav: React.FC = () => {
         <span className="hidden sm:inline">Cross-Asset</span>
       </NavLink>
 
-<<<<<<< HEAD
       <NavLink
         to="/transactions"
         className={({ isActive }) =>
@@ -121,9 +126,6 @@ const AppNav: React.FC = () => {
       </NavLink>
 
       <div className="w-px h-5 bg-(--border-hi) mx-2" />
-=======
-      <div className="w-px h-5 bg-(--border-hi) mx-2 hidden sm:block" />
->>>>>>> d6c8a67 (feat(csv-upload): implement CSV upload with validation preview table)
 
       <NavLink
         to="/debug"
@@ -154,9 +156,7 @@ const AppNav: React.FC = () => {
     <nav className="relative w-full">
       <div className="flex items-center justify-between gap-4 px-3 py-2">
         {/* Desktop links */}
-        <div className="hidden lg:flex items-center gap-4">
-          {navLinks}
-        </div>
+        <div className="hidden lg:flex items-center gap-4">{navLinks}</div>
 
         {/* Mobile menu button */}
         <button
@@ -178,9 +178,7 @@ const AppNav: React.FC = () => {
               size="sm"
             />
             <div className="hidden md:block flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-gray-800 truncate">
-                {currentUser.name}
-              </p>
+              <p className="text-[10px] font-semibold text-gray-800 truncate">{currentUser.name}</p>
               <p className="text-[10px] text-gray-500 truncate">{currentUser.email}</p>
             </div>
           </div>
@@ -190,9 +188,7 @@ const AppNav: React.FC = () => {
       {/* Mobile dropdown menu */}
       {mobileOpen && (
         <div className="lg:hidden absolute left-0 right-0 top-full z-40 bg-white shadow-lg border-t">
-          <div className="px-4 py-3 flex flex-col gap-2">
-            {navLinks}
-          </div>
+          <div className="px-4 py-3 flex flex-col gap-2">{navLinks}</div>
         </div>
       )}
     </nav>

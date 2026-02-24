@@ -31,9 +31,7 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({
     const headers = lines[0].split(',').map((h) => h.trim());
 
     // Validate headers
-    const missingColumns = requiredColumns.filter(
-      (col) => !headers.includes(col)
-    );
+    const missingColumns = requiredColumns.filter((col) => !headers.includes(col));
     if (missingColumns.length > 0) {
       alert(`Missing required columns: ${missingColumns.join(', ')}`);
       return [];
@@ -148,17 +146,10 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({
           className="hidden"
         />
 
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="w-full"
-        >
+        <button onClick={() => fileInputRef.current?.click()} className="w-full">
           <Upload className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-          <p className="text-lg font-semibold text-gray-700">
-            Drag and drop your CSV file
-          </p>
-          <p className="text-sm text-gray-500 mt-1">
-            or click to browse
-          </p>
+          <p className="text-lg font-semibold text-gray-700">Drag and drop your CSV file</p>
+          <p className="text-sm text-gray-500 mt-1">or click to browse</p>
           <p className="text-xs text-gray-400 mt-2">
             Required columns: {requiredColumns.join(', ')}
           </p>
@@ -210,9 +201,7 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({
                       row.isValid ? 'bg-transparent' : 'bg-red-50'
                     }`}
                   >
-                    <td className="px-4 py-3 font-mono text-gray-100">
-                      {row.rowNumber}
-                    </td>
+                    <td className="px-4 py-3 font-mono text-gray-100">{row.rowNumber}</td>
                     <td className="px-4 py-3">
                       {row.isValid ? (
                         <CheckCircle className="w-5 h-5 text-green-100" />
@@ -221,10 +210,7 @@ export const CSVUploader: React.FC<CSVUploaderProps> = ({
                       )}
                     </td>
                     {Object.values(row.data).map((value, idx) => (
-                      <td
-                        key={idx}
-                        className="px-4 py-3 text-gray-100 truncate"
-                      >
+                      <td key={idx} className="px-4 py-3 text-gray-100 truncate">
                         {value}
                       </td>
                     ))}
