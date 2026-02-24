@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Avatar } from './Avatar';
 import { Icon } from '@stellar/design-system';
+import { CSVUploader } from './CSVUploader';
 
 interface Employee {
   id: string;
@@ -15,9 +16,37 @@ interface Employee {
 interface EmployeeListProps {
   employees: Employee[];
   onEmployeeClick?: (employee: Employee) => void;
+  onAddEmployee: (employee: Employee) => void;
 }
 
-export const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onEmployeeClick }) => {
+export const EmployeeList: React.FC<EmployeeListProps> = ({
+  employees,
+  onEmployeeClick,
+  onAddEmployee,
+}) => {
+  const [csvData, setCsvData] = useState<Employee[]>([]);
+  const [showCSVUploader, setShowCSVUploader] = useState(false);
+
+  const handleDataParsed = (data: any[]) => {
+    const newEmployees = data.map((row) => ({
+      id: String(Date.now() + Math.random()),
+      name: row.name,
+      email: row.email,
+      wallet: row.wallet,
+      position: row.position,
+      status: row.status || 'Active',
+    }));
+    setCsvData(newEmployees);
+  };
+
+  const handleAddEmployees = () => {
+    csvData.forEach((employee) => {
+      onAddEmployee(employee);
+    });
+    setCsvData([]);
+    setShowCSVUploader(false);
+  };
+
   const shortenWallet = (wallet: string) => {
     if (!wallet) return '';
     return `${wallet.slice(0, 4)}...${wallet.slice(-4)}`;
@@ -30,9 +59,7 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onEmploye
           <tr className="border-b border-hi">
             <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">Employee</th>
             <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">Role</th>
-            <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">
-              Wallet Address
-            </th>
+            <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">Wallet Address</th>
             <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">Status</th>
             <th className="p-6 text-xs font-bold uppercase tracking-widest text-muted">Actions</th>
           </tr>
@@ -68,16 +95,14 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onEmploye
                 </td>
                 <td className="p-6">
                   <span
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                      employee.status === 'Active'
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${employee.status === 'Active'
                         ? 'bg-green-100 text-green-600 border-green-200'
                         : 'bg-red-100 text-red-600 border-red-200'
-                    }`}
+                      }`}
                   >
                     <div
-                      className={`w-1 h-1 rounded-full ${
-                        employee.status === 'Active' ? 'bg-green-600' : 'bg-red-600'
-                      }`}
+                      className={`w-1 h-1 rounded-full ${employee.status === 'Active' ? 'bg-green-600' : 'bg-red-600'
+                        }`}
                     />
                     {employee.status || '-'}
                   </span>
@@ -94,9 +119,37 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onEmploye
       </table>
       <div className="p-6 w-full flex flex-col items-center justify-center text-center bg-black/10">
         <p className="text-muted mb-4 font-medium">Need to migrate your legacy payroll system?</p>
-        <button className="text-accent font-bold text-sm hover:underline">
-          Import from CSV (Coming Soon)
-        </button>
+        {!showCSVUploader && (
+          <button
+            className="text-accent font-bold text-sm hover:underline"
+            onClick={() => setShowCSVUploader(true)}
+          >
+            Import from CSV
+          </button>
+        )}
+        {showCSVUploader && (
+          <div className="w-full max-w-2xl mx-auto">
+            <CSVUploader
+              requiredColumns={['name', 'email', 'wallet', 'position', 'status']}
+              onDataParsed={handleDataParsed}
+            />
+            <div className="flex gap-2 justify-center mt-4">
+              <button
+                onClick={handleAddEmployees}
+                className="px-4 py-2 bg-blue-500 text-white rounded"
+                disabled={csvData.length === 0}
+              >
+                Add Employees from CSV
+              </button>
+              <button
+                onClick={() => { setShowCSVUploader(false); setCsvData([]); }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

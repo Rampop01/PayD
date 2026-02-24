@@ -154,10 +154,10 @@ export default function EmployeeEntry() {
             marginBottom: '1.5rem',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div className='cursor-pointer' style={{  display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <button
               onClick={() => setIsAdding(false)}
-              className="text-muted hover:text-text transition-colors"
+              className="text-muted cursor-pointer hover:text-text transition-colors"
               title="Back to Directory"
             >
               <Icon.ArrowLeft />
@@ -274,6 +274,7 @@ export default function EmployeeEntry() {
       <EmployeeList
         employees={mockEmployees}
         onEmployeeClick={(employee) => console.log('Clicked:', employee.name)}
+        onAddEmployee={(employee) => console.log('Added:', employee)} 
       />
     </div>
   );
