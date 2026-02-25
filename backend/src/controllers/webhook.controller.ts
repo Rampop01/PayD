@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { WebhookService } from '../services/webhook.service.js';
+import { WebhookService } from '../services/webhook.service';
 import { z } from 'zod';
 
 const subscribeSchema = z.object({

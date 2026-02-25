@@ -1,11 +1,12 @@
 import express from 'express';
+import path from 'path';
 import cors from 'cors';
 import { createServer } from 'http';
 import { config } from './config/env';
 import { getThrottlingConfig } from './config/env';
 import { apiVersionMiddleware } from './middlewares/apiVersionMiddleware';
 import v1Routes from './routes/v1';
-import webhookRoutes from './routes/webhook.routes.js';
+import webhookRoutes from './routes/webhook.routes';
 import { initializeSocket, emitTransactionUpdate } from './services/socketService';
 import { HealthController } from './controllers/healthController';
 import { ThrottlingService } from './services/throttlingService';
@@ -20,6 +21,12 @@ ThrottlingService.getInstance(getThrottlingConfig());
 app.use(cors({ origin: config.CORS_ORIGIN, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve stellar.toml for SEP-0001
+app.get('/.well-known/stellar.toml', (req, res) => {
+  res.setHeader('Content-Type', 'text/plain');
+  res.sendFile(path.join(__dirname, '../.well-known/stellar.toml'));
+});
 
 app.use(apiVersionMiddleware);
 

@@ -12,7 +12,7 @@ export interface WebhookSubscription {
 const subscriptions: WebhookSubscription[] = [];
 
 export class WebhookService {
-  static async subscribe(url: string, secret: string, events: string[]) {
+  static async subscribe(url: string, secret: string, events: string[]): Promise<WebhookSubscription> {
     const subscription: WebhookSubscription = {
       id: Math.random().toString(36).substring(2, 11),
       url,
@@ -23,11 +23,11 @@ export class WebhookService {
     return subscription;
   }
 
-  static listSubscriptions() {
+  static listSubscriptions(): WebhookSubscription[] {
     return subscriptions;
   }
 
-  static deleteSubscription(id: string) {
+  static deleteSubscription(id: string): boolean {
     const index = subscriptions.findIndex((s) => s.id === id);
     if (index !== -1) {
       subscriptions.splice(index, 1);
@@ -36,7 +36,7 @@ export class WebhookService {
     return false;
   }
 
-  static async dispatch(eventType: string, payload: any) {
+  static async dispatch(eventType: string, payload: any): Promise<void> {
     const relevantSubscriptions = subscriptions.filter(
       (s) => s.events.includes(eventType) || s.events.includes('*')
     );
@@ -61,7 +61,7 @@ export class WebhookService {
     await Promise.allSettled(dispatchPromises);
   }
 
-  private static generateSignature(payload: string, secret: string, timestamp: string) {
+  private static generateSignature(payload: string, secret: string, timestamp: string): string {
     const message = `${timestamp}.${payload}`;
     return CryptoJS.HmacSHA256(message, secret).toString(CryptoJS.enc.Hex);
   }
@@ -72,7 +72,7 @@ export class WebhookService {
     headers: any,
     retries = 3,
     delay = 1000
-  ) {
+  ): Promise<void> {
     try {
       await axios.post(url, data, { headers, timeout: 5000 });
     } catch (error) {
