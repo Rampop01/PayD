@@ -20,14 +20,17 @@ interface BulkPaymentStatusTrackerProps {
 
 type ConfirmationMap = Record<string, number>;
 
-function toRecipientStatus(status: PayrollRecipientStatus['status']): 'pending' | 'confirmed' | 'failed' {
+function toRecipientStatus(
+  status: PayrollRecipientStatus['status']
+): 'pending' | 'confirmed' | 'failed' {
   if (status === 'completed') return 'confirmed';
   if (status === 'failed') return 'failed';
   return 'pending';
 }
 
 function getEmployeeName(recipient: PayrollRecipientStatus): string {
-  const fullName = `${recipient.employee_first_name ?? ''} ${recipient.employee_last_name ?? ''}`.trim();
+  const fullName =
+    `${recipient.employee_first_name ?? ''} ${recipient.employee_last_name ?? ''}`.trim();
   return fullName || recipient.employee_email || `Employee #${recipient.employee_id}`;
 }
 
@@ -37,9 +40,10 @@ function findRunTxHash(summary?: PayrollRunSummary): string | null {
   return txHash || null;
 }
 
-function normalizeConfirmationPayload(
-  payload: unknown
-): { batchId: string | null; confirmations: number | null } {
+function normalizeConfirmationPayload(payload: unknown): {
+  batchId: string | null;
+  confirmations: number | null;
+} {
   if (!payload || typeof payload !== 'object') {
     return { batchId: null, confirmations: null };
   }
@@ -52,11 +56,7 @@ function normalizeConfirmationPayload(
     null;
 
   const countRaw =
-    record.confirmations ??
-    record.confirmationCount ??
-    record.confirmed ??
-    record.count ??
-    null;
+    record.confirmations ?? record.confirmationCount ?? record.confirmed ?? record.count ?? null;
 
   const count =
     typeof countRaw === 'number'
@@ -250,25 +250,34 @@ export function BulkPaymentStatusTracker({ organizationId }: BulkPaymentStatusTr
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ run, summary, employeeCount, txHash, confirmationCount, hasFailedRecipients }) => (
-                <FragmentRow
-                  key={run.id}
-                  run={run}
-                  summary={summary}
-                  employeeCount={employeeCount}
-                  txHash={txHash}
-                  confirmationCount={confirmationCount}
-                  expanded={expandedRunId === run.id}
-                  retrying={isRetryingBatchId === run.batch_id}
-                  hasFailedRecipients={hasFailedRecipients}
-                  onToggleExpand={() => {
-                    void handleToggleExpand(run.id);
-                  }}
-                  onRetry={() => {
-                    void handleRetry(run);
-                  }}
-                />
-              ))}
+              {rows.map(
+                ({
+                  run,
+                  summary,
+                  employeeCount,
+                  txHash,
+                  confirmationCount,
+                  hasFailedRecipients,
+                }) => (
+                  <FragmentRow
+                    key={run.id}
+                    run={run}
+                    summary={summary}
+                    employeeCount={employeeCount}
+                    txHash={txHash}
+                    confirmationCount={confirmationCount}
+                    expanded={expandedRunId === run.id}
+                    retrying={isRetryingBatchId === run.batch_id}
+                    hasFailedRecipients={hasFailedRecipients}
+                    onToggleExpand={() => {
+                      void handleToggleExpand(run.id);
+                    }}
+                    onRetry={() => {
+                      void handleRetry(run);
+                    }}
+                  />
+                )
+              )}
             </tbody>
           </table>
         </div>
@@ -314,7 +323,12 @@ function FragmentRow({
         <td className="py-3 pr-4">{confirmationCount}</td>
         <td className="py-3 pr-4">
           {txHash ? (
-            <a href={getTxExplorerUrl(txHash)} target="_blank" rel="noreferrer" className="text-accent">
+            <a
+              href={getTxExplorerUrl(txHash)}
+              target="_blank"
+              rel="noreferrer"
+              className="text-accent"
+            >
               {txHash.slice(0, 10)}...
             </a>
           ) : (
@@ -323,7 +337,11 @@ function FragmentRow({
         </td>
         <td className="py-3 pr-4">
           <div className="flex items-center gap-3">
-            <button type="button" onClick={onToggleExpand} className="text-accent hover:text-accent/80">
+            <button
+              type="button"
+              onClick={onToggleExpand}
+              className="text-accent hover:text-accent/80"
+            >
               {expanded ? 'Hide' : 'Details'}
             </button>
             {hasFailedRecipients ? (
