@@ -20,6 +20,7 @@ pub enum ContractError {
     AmountOverflow     = 7,
     SequenceMismatch   = 8,
     BatchNotFound      = 9,
+    EntryArchived      = 10,
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────
@@ -78,6 +79,10 @@ pub enum DataKey {
 }
 
 const MAX_BATCH_SIZE: u32 = 100;
+const PERSISTENT_TTL_THRESHOLD: u32 = 20_000;
+const PERSISTENT_TTL_EXTEND_TO: u32 = 120_000;
+const TEMPORARY_TTL_THRESHOLD: u32 = 2_000;
+const TEMPORARY_TTL_EXTEND_TO: u32 = 20_000;
 
 // ── Contract ──────────────────────────────────────────────────────────────────
 
@@ -87,18 +92,27 @@ pub struct BulkPaymentContract;
 #[contractimpl]
 impl BulkPaymentContract {
     pub fn initialize(env: Env, admin: Address) -> Result<(), ContractError> {
-        if env.storage().instance().has(&DataKey::Admin) {
+        if env.storage().persistent().has(&DataKey::Admin) {
             return Err(ContractError::AlreadyInitialized);
         }
-        env.storage().instance().set(&DataKey::Admin, &admin);
-        env.storage().instance().set(&DataKey::BatchCount, &0u64);
-        env.storage().instance().set(&DataKey::Sequence, &0u64);
+        env.storage().persistent().set(&DataKey::Admin, &admin);
+        env.storage().persistent().set(&DataKey::BatchCount, &0u64);
+        env.storage().persistent().set(&DataKey::Sequence, &0u64);
+        Self::bump_core_ttl(&env);
         Ok(())
     }
 
     pub fn set_admin(env: Env, new_admin: Address) -> Result<(), ContractError> {
         Self::require_admin(&env)?;
-        env.storage().instance().set(&DataKey::Admin, &new_admin);
+        env.storage().persistent().set(&DataKey::Admin, &new_admin);
+        Self::bump_core_ttl(&env);
+        Ok(())
+    }
+
+    /// Extends TTL for critical contract state to reduce archival risk.
+    pub fn bump_ttl(env: Env) -> Result<(), ContractError> {
+        Self::require_admin(&env)?;
+        Self::bump_core_ttl(&env);
         Ok(())
     }
 
@@ -112,6 +126,7 @@ impl BulkPaymentContract {
         expected_sequence: u64,
     ) -> Result<u64, ContractError> {
         sender.require_auth();
+        Self::bump_core_ttl(&env);
         Self::check_and_advance_sequence(&env, expected_sequence)?;
 
         let len = payments.len();
@@ -138,7 +153,7 @@ impl BulkPaymentContract {
         }
 
         let batch_id = Self::next_batch_id(&env);
-        env.storage().instance().set(&DataKey::Batch(batch_id), &BatchRecord {
+        env.storage().temporary().set(&DataKey::Batch(batch_id), &BatchRecord {
             sender,
             token,
             total_sent: total,
@@ -146,6 +161,11 @@ impl BulkPaymentContract {
             fail_count: 0,
             status: soroban_sdk::symbol_short!("completed"),
         });
+        env.storage().temporary().extend_ttl(
+            &DataKey::Batch(batch_id),
+            TEMPORARY_TTL_THRESHOLD,
+            TEMPORARY_TTL_EXTEND_TO,
+        );
 
         BatchExecutedEvent { batch_id, total_sent: total };
         Ok(batch_id)
@@ -160,6 +180,7 @@ impl BulkPaymentContract {
         expected_sequence: u64,
     ) -> Result<u64, ContractError> {
         sender.require_auth();
+        Self::bump_core_ttl(&env);
         Self::check_and_advance_sequence(&env, expected_sequence)?;
 
         let len = payments.len();
@@ -220,7 +241,7 @@ impl BulkPaymentContract {
         };
 
         let batch_id = Self::next_batch_id(&env);
-        env.storage().instance().set(&DataKey::Batch(batch_id), &BatchRecord {
+        env.storage().temporary().set(&DataKey::Batch(batch_id), &BatchRecord {
             sender,
             token,
             total_sent,
@@ -228,24 +249,53 @@ impl BulkPaymentContract {
             fail_count,
             status,
         });
+        env.storage().temporary().extend_ttl(
+            &DataKey::Batch(batch_id),
+            TEMPORARY_TTL_THRESHOLD,
+            TEMPORARY_TTL_EXTEND_TO,
+        );
 
         BatchPartialEvent { batch_id, success_count, fail_count };
         Ok(batch_id)
     }
 
     pub fn get_sequence(env: Env) -> u64 {
-        env.storage().instance().get(&DataKey::Sequence).unwrap_or(0)
+        let key = DataKey::Sequence;
+        if let Some(value) = env.storage().persistent().get(&key) {
+            env.storage().persistent().extend_ttl(
+                &key,
+                PERSISTENT_TTL_THRESHOLD,
+                PERSISTENT_TTL_EXTEND_TO,
+            );
+            value
+        } else {
+            0
+        }
     }
 
     pub fn get_batch(env: Env, batch_id: u64) -> Result<BatchRecord, ContractError> {
-        env.storage()
-            .instance()
-            .get(&DataKey::Batch(batch_id))
-            .ok_or(ContractError::BatchNotFound)
+        let key = DataKey::Batch(batch_id);
+        let record = env.storage().temporary().get(&key).ok_or(ContractError::BatchNotFound)?;
+        env.storage().temporary().extend_ttl(
+            &key,
+            TEMPORARY_TTL_THRESHOLD,
+            TEMPORARY_TTL_EXTEND_TO,
+        );
+        Ok(record)
     }
 
     pub fn get_batch_count(env: Env) -> u64 {
-        env.storage().instance().get(&DataKey::BatchCount).unwrap_or(0)
+        let key = DataKey::BatchCount;
+        if let Some(value) = env.storage().persistent().get(&key) {
+            env.storage().persistent().extend_ttl(
+                &key,
+                PERSISTENT_TTL_THRESHOLD,
+                PERSISTENT_TTL_EXTEND_TO,
+            );
+            value
+        } else {
+            0
+        }
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
@@ -253,31 +303,62 @@ impl BulkPaymentContract {
     fn require_admin(env: &Env) -> Result<(), ContractError> {
         let admin: Address = env
             .storage()
-            .instance()
+            .persistent()
             .get(&DataKey::Admin)
-            .ok_or(ContractError::NotInitialized)?;
+            .ok_or(ContractError::EntryArchived)?;
+        env.storage().persistent().extend_ttl(
+            &DataKey::Admin,
+            PERSISTENT_TTL_THRESHOLD,
+            PERSISTENT_TTL_EXTEND_TO,
+        );
         admin.require_auth();
         Ok(())
     }
 
     fn check_and_advance_sequence(env: &Env, expected: u64) -> Result<(), ContractError> {
-        let current: u64 = env.storage().instance().get(&DataKey::Sequence).unwrap_or(0);
+        let current: u64 = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Sequence)
+            .ok_or(ContractError::EntryArchived)?;
         if current != expected {
             return Err(ContractError::SequenceMismatch);
         }
-        env.storage().instance().set(&DataKey::Sequence, &(current + 1));
+        env.storage().persistent().set(&DataKey::Sequence, &(current + 1));
+        env.storage().persistent().extend_ttl(
+            &DataKey::Sequence,
+            PERSISTENT_TTL_THRESHOLD,
+            PERSISTENT_TTL_EXTEND_TO,
+        );
         Ok(())
     }
 
     fn next_batch_id(env: &Env) -> u64 {
         let count: u64 = env
             .storage()
-            .instance()
+            .persistent()
             .get(&DataKey::BatchCount)
             .unwrap_or(0)
             + 1;
-        env.storage().instance().set(&DataKey::BatchCount, &count);
+        env.storage().persistent().set(&DataKey::BatchCount, &count);
+        env.storage().persistent().extend_ttl(
+            &DataKey::BatchCount,
+            PERSISTENT_TTL_THRESHOLD,
+            PERSISTENT_TTL_EXTEND_TO,
+        );
         count
+    }
+
+    fn bump_core_ttl(env: &Env) {
+        for key in [DataKey::Admin, DataKey::BatchCount, DataKey::Sequence] {
+            if env.storage().persistent().has(&key) {
+                env.storage().persistent().extend_ttl(
+                    &key,
+                    PERSISTENT_TTL_THRESHOLD,
+                    PERSISTENT_TTL_EXTEND_TO,
+                );
+            }
+        }
     }
 }
 
