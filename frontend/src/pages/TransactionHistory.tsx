@@ -28,8 +28,8 @@ function getStatusClass(status: string): string {
 function TimelineSkeleton() {
   return (
     <div className="space-y-3">
-      {Array.from({ length: 6 }).map((_, idx) => (
-        <div key={idx} className="animate-pulse rounded-xl border border-zinc-800 p-4">
+      {['s1', 's2', 's3', 's4', 's5', 's6'].map((key) => (
+        <div key={key} className="animate-pulse rounded-xl border border-zinc-800 p-4">
           <div className="h-3 w-40 bg-zinc-800 rounded mb-2" />
           <div className="h-3 w-64 bg-zinc-800 rounded mb-2" />
           <div className="h-3 w-28 bg-zinc-800 rounded" />

@@ -13,6 +13,8 @@ export class ContractEventsController {
       const offset = (page - 1) * limit;
       const eventTypeRaw = req.query.eventType;
       const eventType = typeof eventTypeRaw === 'string' ? eventTypeRaw.trim() : undefined;
+      const categoryRaw = req.query.category;
+      const category = typeof categoryRaw === 'string' ? categoryRaw.trim() : undefined;
 
       const params: Array<string | number> = [contractId as string];
 
@@ -21,6 +23,11 @@ export class ContractEventsController {
       if (eventType) {
         params.push(eventType);
         whereClause += ` AND event_type = $${params.length}`;
+      }
+
+      if (category) {
+        params.push(category);
+        whereClause += ` AND category = $${params.length}`;
       }
 
       const countResult = await query(

@@ -190,6 +190,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bulk_payment"
+version = "0.0.1"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -282,16 +289,6 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
-]
-
-[[package]]
-name = "cross_asset_payment"
-version = "0.0.1"
-dependencies = [
- "soroban-sdk",
- "stellar-access",
- "stellar-macros",
- "stellar-tokens",
 ]
 
 [[package]]
@@ -665,13 +662,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
-name = "hello_world"
-version = "0.0.0"
-dependencies = [
- "soroban-sdk",
-]
-
-[[package]]
 name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -993,13 +983,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom",
-]
-
-[[package]]
-name = "revenue_split"
-version = "0.0.1"
-dependencies = [
- "soroban-sdk",
 ]
 
 [[package]]
@@ -1399,32 +1382,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
-name = "stellar-access"
-version = "0.6.0"
-source = "git+https://github.com/OpenZeppelin/stellar-contracts?tag=v0.6.0#82f97111f9568d32653dd5b3563baf5b73509c89"
-dependencies = [
- "soroban-sdk",
-]
-
-[[package]]
-name = "stellar-contract-utils"
-version = "0.6.0"
-source = "git+https://github.com/OpenZeppelin/stellar-contracts?tag=v0.6.0#82f97111f9568d32653dd5b3563baf5b73509c89"
-dependencies = [
- "soroban-sdk",
-]
-
-[[package]]
-name = "stellar-macros"
-version = "0.6.0"
-source = "git+https://github.com/OpenZeppelin/stellar-contracts?tag=v0.6.0#82f97111f9568d32653dd5b3563baf5b73509c89"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.101",
-]
-
-[[package]]
 name = "stellar-strkey"
 version = "0.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1443,15 +1400,6 @@ dependencies = [
  "crate-git-revision",
  "data-encoding",
  "heapless",
-]
-
-[[package]]
-name = "stellar-tokens"
-version = "0.6.0"
-source = "git+https://github.com/OpenZeppelin/stellar-contracts?tag=v0.6.0#82f97111f9568d32653dd5b3563baf5b73509c89"
-dependencies = [
- "soroban-sdk",
- "stellar-contract-utils",
 ]
 
 [[package]]
@@ -1575,13 +1523,6 @@ name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
-
-[[package]]
-name = "vesting_escrow"
-version = "0.0.1"
-dependencies = [
- "soroban-sdk",
-]
 
 [[package]]
 name = "visibility"

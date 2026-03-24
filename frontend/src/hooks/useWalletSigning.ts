@@ -20,8 +20,8 @@ export function useWalletSigning() {
     setIsSigning(true);
     setError(null);
     try {
-      const ready = await requireWallet();
-      if (!ready) {
+      const connectedAddress = await requireWallet();
+      if (!connectedAddress) {
         throw new Error('Wallet not connected. Please connect and try again.');
       }
       const signedXdr = await signTransaction(xdr);

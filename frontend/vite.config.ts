@@ -20,6 +20,17 @@ export default defineConfig(() => {
     ],
     build: {
       target: 'esnext',
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            stellar: ['@stellar/stellar-sdk'],
+            ui: ['lucide-react', 'framer-motion'],
+            vendor: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
+            analytics: ['@sentry/react'],
+            charts: ['recharts'],
+          },
+        },
+      },
     },
     optimizeDeps: {
       exclude: ['@stellar/stellar-xdr-json'],

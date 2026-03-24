@@ -82,7 +82,7 @@ export function BulkPaymentStatusTracker({ organizationId }: BulkPaymentStatusTr
 
   const { notifyError, notifySuccess } = useNotification();
   const { socket } = useSocket();
-  const { address } = useWallet();
+  const { requireWallet } = useWallet();
   const { sign } = useWalletSigning();
 
   const loadRuns = useCallback(async () => {
@@ -159,8 +159,8 @@ export function BulkPaymentStatusTracker({ organizationId }: BulkPaymentStatusTr
   };
 
   const handleRetry = async (run: PayrollRunRecord) => {
-    if (!address) {
-      notifyError('Wallet required', 'Connect a wallet before retrying failed recipients.');
+    const walletAddress = await requireWallet();
+    if (!walletAddress) {
       return;
     }
 
@@ -182,7 +182,7 @@ export function BulkPaymentStatusTracker({ organizationId }: BulkPaymentStatusTr
       const { txHash } = await retryFailedBatch({
         contractId,
         batchId: run.batch_id,
-        sourceAddress: address,
+        sourceAddress: walletAddress,
         signTransaction: sign,
       });
 

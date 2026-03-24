@@ -83,13 +83,14 @@ export class ContractEventIndexerService {
 
         const eventId = String(event.id || `${contractId}-${ledgerSequence}-${event.txHash || ''}`);
         const eventType = this.extractEventType(event);
+        const category = this.extractCategory(event);
         const txHash = event.txHash ? String(event.txHash) : null;
 
         await query(
-          `INSERT INTO contract_events (event_id, contract_id, event_type, payload, ledger_sequence, tx_hash)
-           VALUES ($1, $2, $3, $4::jsonb, $5, $6)
+          `INSERT INTO contract_events (event_id, contract_id, event_type, category, payload, ledger_sequence, tx_hash)
+           VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)
            ON CONFLICT (event_id, contract_id) DO NOTHING`,
-          [eventId, contractId, eventType, JSON.stringify(event), ledgerSequence, txHash]
+          [eventId, contractId, eventType, category, JSON.stringify(event), ledgerSequence, txHash]
         );
       }
 
@@ -124,6 +125,7 @@ export class ContractEventIndexerService {
         event_id TEXT NOT NULL,
         contract_id TEXT NOT NULL,
         event_type TEXT NOT NULL,
+        category TEXT,
         payload JSONB NOT NULL DEFAULT '{}'::jsonb,
         ledger_sequence BIGINT NOT NULL,
         tx_hash TEXT,
@@ -205,5 +207,12 @@ export class ContractEventIndexerService {
       return String(event.topic[0]);
     }
     return 'unknown';
+  }
+
+  private static extractCategory(event: RpcContractEvent): string | null {
+    if (Array.isArray(event.topic) && event.topic.length > 1) {
+      return String(event.topic[1]);
+    }
+    return null;
   }
 }

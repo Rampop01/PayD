@@ -80,7 +80,7 @@ export default function EmployeeEntry() {
     walletAddress?: string;
     employeeName?: string;
   } | null>(null);
-  const { notifySuccess } = useNotification();
+  const { notifySuccess, notify } = useNotification();
   const { saving, lastSaved, loadSavedData } = useAutosave<EmployeeFormState>(
     'employee-entry-draft',
     formData
@@ -91,8 +91,9 @@ export default function EmployeeEntry() {
     const saved = loadSavedData();
     if (saved) {
       setFormData(saved);
+      notify('Recovered unsaved employee draft');
     }
-  }, [loadSavedData]);
+  }, [loadSavedData, notify]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

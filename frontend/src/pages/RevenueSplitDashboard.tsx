@@ -5,6 +5,8 @@
   @typescript-eslint/no-unsafe-argument
 */
 import { useEffect, useMemo, useState } from 'react';
+import { ContractErrorPanel } from '../components/ContractErrorPanel';
+import { parseContractError, type ContractErrorDetail } from '../utils/contractErrorParser';
 import { useNotification } from '../hooks/useNotification';
 import { useWallet } from '../hooks/useWallet';
 import { useWalletSigning } from '../hooks/useWalletSigning';
@@ -41,13 +43,14 @@ function buildConicGradient(allocations: RevenueAllocation[]): string {
 }
 
 export default function RevenueSplitDashboard() {
-  const [allocations, setAllocations] = useState<RevenueAllocation[]>([]);
+  const [allocations, setAllocations] = useState<(RevenueAllocation & { id: string })[]>([]);
   const [events, setEvents] = useState<DistributionEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [contractError, setContractError] = useState<ContractErrorDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const { address, connect } = useWallet();
+  const { address, connect, requireWallet } = useWallet();
   const { sign } = useWalletSigning();
   const { notifyError, notifySuccess } = useNotification();
 
@@ -102,7 +105,9 @@ export default function RevenueSplitDashboard() {
           setAllocations([]);
         } else {
           const contractAllocations = await fetchRevenueSplitAllocations(contractId, address);
-          setAllocations(contractAllocations);
+          setAllocations(
+            contractAllocations.map((a, i) => ({ ...a, id: `alloc-${i}-${a.recipient}` }))
+          );
         }
 
         const distributionEvents = await fetchDistributionEvents(ORGANIZATION_ID, 1, 50);
@@ -126,6 +131,7 @@ export default function RevenueSplitDashboard() {
           ? {
               ...entry,
               [field]: field === 'percentage' ? Number.parseFloat(value || '0') : value,
+              id: field === 'recipient' ? `alloc-${index}-${value}` : entry.id,
             }
           : entry
       )
@@ -133,7 +139,7 @@ export default function RevenueSplitDashboard() {
   };
 
   const addRecipient = () => {
-    setAllocations((prev) => [...prev, { recipient: '', percentage: 0 }]);
+    setAllocations((prev) => [...prev, { recipient: '', percentage: 0, id: `new-${Date.now()}` }]);
   };
 
   const removeRecipient = (index: number) => {
@@ -141,8 +147,8 @@ export default function RevenueSplitDashboard() {
   };
 
   const handleSaveAllocations = async () => {
-    if (!address) {
-      notifyError('Wallet required', 'Connect a wallet before updating allocations.');
+    const walletAddress = await requireWallet();
+    if (!walletAddress) {
       return;
     }
 
@@ -164,6 +170,7 @@ export default function RevenueSplitDashboard() {
     }
 
     setIsSaving(true);
+    setContractError(null);
     try {
       await contractService.initialize();
       const contractId =
@@ -175,16 +182,19 @@ export default function RevenueSplitDashboard() {
 
       const { txHash } = await updateRevenueAllocations({
         contractId,
-        sourceAddress: address,
+        sourceAddress: walletAddress,
         allocations,
         signTransaction: sign,
       });
 
       notifySuccess('Allocations updated', `Submitted on-chain update transaction: ${txHash}`);
     } catch (saveError) {
-      const message =
-        saveError instanceof Error ? saveError.message : 'Failed to update allocations';
-      notifyError('Allocation update failed', message);
+      const parsed = parseContractError(
+        undefined,
+        saveError instanceof Error ? saveError.message : 'Failed to update allocations'
+      );
+      setContractError(parsed);
+      notifyError('Allocation update failed', parsed.message);
     } finally {
       setIsSaving(false);
     }
@@ -235,8 +245,8 @@ export default function RevenueSplitDashboard() {
               {allocations.length === 0 ? (
                 <p className="text-sm text-zinc-400">No allocation data loaded.</p>
               ) : (
-                allocations.map((entry, index) => (
-                  <p key={`${entry.recipient}-${index}`} className="text-xs text-zinc-300">
+                allocations.map((entry) => (
+                  <p key={entry.id} className="text-xs text-zinc-300">
                     {entry.recipient.slice(0, 6)}...{entry.recipient.slice(-4)} -{' '}
                     <span className="font-bold text-white">{entry.percentage.toFixed(2)}%</span>
                   </p>
@@ -265,10 +275,7 @@ export default function RevenueSplitDashboard() {
 
           <div className="space-y-3">
             {allocations.map((entry, index) => (
-              <div
-                key={`${entry.recipient}-${index}`}
-                className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center"
-              >
+              <div key={entry.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
                 <input
                   type="text"
                   value={entry.recipient}
@@ -310,6 +317,8 @@ export default function RevenueSplitDashboard() {
               {isSaving ? 'Submitting...' : 'Submit On-Chain Update'}
             </button>
           </div>
+
+          <ContractErrorPanel error={contractError} onClear={() => setContractError(null)} />
         </section>
       </div>
 

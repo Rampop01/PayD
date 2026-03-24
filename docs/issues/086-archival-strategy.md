@@ -10,7 +10,7 @@ Develop and implement a strategy for managing Soroban's state archival requireme
 
 ## Acceptance Criteria
 
-- [ ] Audit all contract state variables for storage type (Persistent vs. Temporary).
-- [ ] Implement a `bump_ttl` function for critical data (e.g., active balances, organization config).
-- [ ] Develop a mechanism to handle restored entries that have previously expired.
-- [ ] Document the archival cycle and expected costs for the organization.
+- [x] Audit all contract state variables for storage type (Persistent vs. Temporary).
+- [x] Implement a `bump_ttl` function for critical data (e.g., active balances, organization config).
+- [x] Develop a mechanism to handle restored entries that have previously expired.
+- [x] Document the archival cycle and expected costs for the organization.

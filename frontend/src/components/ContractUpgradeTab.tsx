@@ -103,9 +103,10 @@ function StatusBadge({ status }: { status: UpgradeLog['status'] }) {
 interface ContractCardProps {
   contract: ContractRecord;
   onUpgrade: (contract: ContractRecord) => void;
+  canUpgrade: boolean;
 }
 
-function ContractCard({ contract, onUpgrade }: ContractCardProps) {
+function ContractCard({ contract, onUpgrade, canUpgrade }: ContractCardProps) {
   const [showHistory, setShowHistory] = useState(false);
   const [logs, setLogs] = useState<UpgradeLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
@@ -144,7 +145,9 @@ function ContractCard({ contract, onUpgrade }: ContractCardProps) {
 
         <button
           onClick={() => onUpgrade(contract)}
-          className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-accent/15 text-accent border border-accent/30 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-accent hover:text-black transition-all"
+          disabled={!canUpgrade}
+          className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-accent/15 text-accent border border-accent/30 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-accent hover:text-black transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-accent/15 disabled:hover:text-accent"
+          title={canUpgrade ? 'Upgrade contract' : 'Connect an admin wallet to upgrade'}
         >
           <ArrowUpCircle className="w-3.5 h-3.5" />
           Upgrade
@@ -372,6 +375,7 @@ export default function ContractUpgradeTab({ adminAddress }: ContractUpgradeTabP
             <ContractCard
               key={contract.id}
               contract={contract}
+              canUpgrade={Boolean(adminAddress)}
               onUpgrade={(c) => adminAddress && setSelectedContract(c)}
             />
           ))}

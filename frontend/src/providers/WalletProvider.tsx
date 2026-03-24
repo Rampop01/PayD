@@ -73,44 +73,59 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     void attemptSilentReconnect();
   }, [notifySuccess]);
 
-  const connect = async () => {
+  const connect = async (): Promise<string | null> => {
     const kit = kitRef.current;
-    if (!kit) return;
+    if (!kit) return null;
 
     setIsConnecting(true);
     try {
-      await kit.openModal({
-        modalTitle: t('wallet.modalTitle'),
-        onWalletSelected: (option) => {
-          void (async () => {
-            const { address } = await kit.getAddress();
-            setAddress(address);
-            setWalletName(option.id);
-            localStorage.setItem(LAST_WALLET_STORAGE_KEY, option.id);
-            notifySuccess(
-              'Wallet connected',
-              `${address.slice(0, 6)}...${address.slice(-4)} via ${option.id}`
-            );
-          })();
-        },
-        onClosed: () => {
-          setIsConnecting(false);
-        },
+      const selectedAddress = await new Promise<string | null>((resolve) => {
+        void kit.openModal({
+          modalTitle: t('wallet.modalTitle'),
+          onWalletSelected: (option) => {
+            void (async () => {
+              try {
+                const { address } = await kit.getAddress();
+                setAddress(address);
+                setWalletName(option.id);
+                localStorage.setItem(LAST_WALLET_STORAGE_KEY, option.id);
+                notifySuccess(
+                  'Wallet connected',
+                  `${address.slice(0, 6)}...${address.slice(-4)} via ${option.id}`
+                );
+                resolve(address);
+              } catch (error) {
+                notifyError(
+                  'Wallet connection failed',
+                  error instanceof Error ? error.message : 'Please try again.'
+                );
+                resolve(null);
+              }
+            })();
+          },
+          onClosed: () => {
+            setIsConnecting(false);
+            resolve(null);
+          },
+        });
       });
+
+      return selectedAddress;
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       notifyError(
         'Wallet connection failed',
         error instanceof Error ? error.message : 'Please try again.'
       );
+      setIsConnecting(false);
+      return null;
     }
   };
 
-  const requireWallet = async (): Promise<boolean> => {
-    if (address) return true;
+  const requireWallet = async (): Promise<string | null> => {
+    if (address) return address;
     notifyError('Wallet required', 'Connect your wallet to continue with this contract action.');
-    await connect();
-    return false;
+    return connect();
   };
 
   const disconnect = () => {

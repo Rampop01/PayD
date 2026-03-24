@@ -20,6 +20,9 @@ pub enum DataKey {
     Config,
 }
 
+const PERSISTENT_TTL_THRESHOLD: u32 = 20_000;
+const PERSISTENT_TTL_EXTEND_TO: u32 = 120_000;
+
 #[contract]
 pub struct VestingContract;
 
@@ -36,7 +39,7 @@ impl VestingContract {
         amount: i128,
         clawback_admin: Address,
     ) {
-        if e.storage().instance().has(&DataKey::Config) {
+        if e.storage().persistent().has(&DataKey::Config) {
             panic!("Already initialized");
         }
         
@@ -62,7 +65,8 @@ impl VestingContract {
             is_active: true,
         };
 
-        e.storage().instance().set(&DataKey::Config, &config);
+        e.storage().persistent().set(&DataKey::Config, &config);
+        Self::bump_config_ttl(&e);
         
         // Transfer tokens from funder to contract
         let client = token::Client::new(&e, &token);
@@ -70,7 +74,7 @@ impl VestingContract {
     }
 
     pub fn claim(e: Env) {
-        let mut config: VestingConfig = e.storage().instance().get(&DataKey::Config).expect("Not initialized");
+        let mut config: VestingConfig = e.storage().persistent().get(&DataKey::Config).expect("Config entry unavailable; restore and retry");
         
         config.beneficiary.require_auth();
         
@@ -84,7 +88,8 @@ impl VestingContract {
 
         // Update state
         config.claimed_amount += claimable;
-        e.storage().instance().set(&DataKey::Config, &config);
+        e.storage().persistent().set(&DataKey::Config, &config);
+        Self::bump_config_ttl(&e);
 
         // Transfer tokens
         let client = token::Client::new(&e, &config.token);
@@ -92,7 +97,7 @@ impl VestingContract {
     }
     
     pub fn clawback(e: Env) {
-        let mut config: VestingConfig = e.storage().instance().get(&DataKey::Config).expect("Not initialized");
+        let mut config: VestingConfig = e.storage().persistent().get(&DataKey::Config).expect("Config entry unavailable; restore and retry");
         
         config.clawback_admin.require_auth();
         
@@ -110,7 +115,8 @@ impl VestingContract {
         // We set total_amount to vested, so effectively the grant is capped at what was vested at this moment
         config.total_amount = vested;
         config.is_active = false;
-        e.storage().instance().set(&DataKey::Config, &config);
+        e.storage().persistent().set(&DataKey::Config, &config);
+        Self::bump_config_ttl(&e);
 
         if unvested > 0 {
             // Return unvested tokens to admin
@@ -120,18 +126,29 @@ impl VestingContract {
     }
 
     pub fn get_vested_amount(e: Env) -> i128 {
-        let config: VestingConfig = e.storage().instance().get(&DataKey::Config).expect("Not initialized");
+        let config: VestingConfig = e.storage().persistent().get(&DataKey::Config).expect("Config entry unavailable; restore and retry");
+        Self::bump_config_ttl(&e);
         Self::calc_vested(&e, &config)
     }
     
     pub fn get_claimable_amount(e: Env) -> i128 {
-        let config: VestingConfig = e.storage().instance().get(&DataKey::Config).expect("Not initialized");
+        let config: VestingConfig = e.storage().persistent().get(&DataKey::Config).expect("Config entry unavailable; restore and retry");
+        Self::bump_config_ttl(&e);
         let vested = Self::calc_vested(&e, &config);
         vested - config.claimed_amount
     }
     
     pub fn get_config(e: Env) -> VestingConfig {
-        e.storage().instance().get(&DataKey::Config).expect("Not initialized")
+        let config: VestingConfig = e.storage().persistent().get(&DataKey::Config).expect("Config entry unavailable; restore and retry");
+        Self::bump_config_ttl(&e);
+        config
+    }
+
+    /// Extends TTL for the vesting configuration entry.
+    pub fn bump_ttl(e: Env) {
+        let config: VestingConfig = e.storage().persistent().get(&DataKey::Config).expect("Config entry unavailable; restore and retry");
+        config.clawback_admin.require_auth();
+        Self::bump_config_ttl(&e);
     }
 
     fn calc_vested(e: &Env, config: &VestingConfig) -> i128 {
@@ -155,6 +172,16 @@ impl VestingContract {
         let duration = config.duration_seconds as i128;
         
         total.checked_mul(elapsed).unwrap().checked_div(duration).unwrap()
+    }
+
+    fn bump_config_ttl(e: &Env) {
+        if e.storage().persistent().has(&DataKey::Config) {
+            e.storage().persistent().extend_ttl(
+                &DataKey::Config,
+                PERSISTENT_TTL_THRESHOLD,
+                PERSISTENT_TTL_EXTEND_TO,
+            );
+        }
     }
 }
 

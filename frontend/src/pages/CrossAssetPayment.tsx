@@ -10,11 +10,13 @@ import {
   submitCrossAssetPayment,
   type ConversionPath,
 } from '../services/crossAssetPayment';
+import { ContractErrorPanel } from '../components/ContractErrorPanel';
+import { parseContractError, type ContractErrorDetail } from '../utils/contractErrorParser';
 
 export default function CrossAssetPayment() {
   const { notifySuccess, notifyError } = useNotification();
   const { socket } = useSocket();
-  const { address, connect } = useWallet();
+  const { address, connect, requireWallet } = useWallet();
   const { sign } = useWalletSigning();
   const [assetIn, setAssetIn] = useState('USDC');
   const [assetOut, setAssetOut] = useState('NGN');
@@ -26,6 +28,7 @@ export default function CrossAssetPayment() {
   const [submissionTxHash, setSubmissionTxHash] = useState<string | null>(null);
   const [liveStatusMessage, setLiveStatusMessage] = useState<string>('Waiting for submission...');
   const [status, setStatus] = useState<string>('idle');
+  const [contractError, setContractError] = useState<ContractErrorDetail | null>(null);
 
   const selectedPath = useMemo(
     () => paths.find((path) => path.id === selectedPathId) || null,
@@ -100,8 +103,8 @@ export default function CrossAssetPayment() {
   }, [notifySuccess, socket, submissionTxHash]);
 
   const handleInitiate = async () => {
-    if (!address) {
-      notifyError('Wallet required', 'Connect your wallet before submitting cross-asset payment.');
+    const walletAddress = await requireWallet();
+    if (!walletAddress) {
       return;
     }
     if (!selectedPath) {
@@ -116,6 +119,7 @@ export default function CrossAssetPayment() {
     }
 
     setStatus('submitting');
+    setContractError(null);
     try {
       await contractService.initialize();
       const contractId =
@@ -127,7 +131,7 @@ export default function CrossAssetPayment() {
 
       const result = await submitCrossAssetPayment({
         contractId,
-        sourceAddress: address,
+        sourceAddress: walletAddress,
         signTransaction: sign,
         amount: parsedAmount,
         fromAsset: assetIn,
@@ -142,10 +146,12 @@ export default function CrossAssetPayment() {
       notifySuccess('Payment submitted', `On-chain transaction hash: ${result.txHash}`);
     } catch (error) {
       setStatus('error');
-      notifyError(
-        'Payment failed',
+      const parsed = parseContractError(
+        undefined,
         error instanceof Error ? error.message : 'An unexpected error occurred.'
       );
+      setContractError(parsed);
+      notifyError('Payment failed', parsed.message);
     }
   };
 
@@ -261,6 +267,8 @@ export default function CrossAssetPayment() {
                   'Simulate + Submit Payment'
                 )}
               </button>
+
+              <ContractErrorPanel error={contractError} onClear={() => setContractError(null)} />
             </div>
           </div>
 

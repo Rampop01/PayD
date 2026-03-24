@@ -12,6 +12,8 @@ import {
   Award,
   Receipt,
   AlertCircle,
+  Gift,
+  Info,
 } from 'lucide-react';
 import { useEmployeePortal, EmployeeTransaction } from '../hooks/useEmployeePortal';
 import {
@@ -20,8 +22,108 @@ import {
   getCurrencySymbol,
   getStellarExpertAccountLink,
 } from '../services/currencyConversion';
+import { claimService, ClaimableBalance } from '../services/claimableBalance';
 import styles from './EmployeePortal.module.css';
 import { useWallet } from '../hooks/useWallet';
+
+/* ── Pending Claims Section ──────── */
+function PendingClaimsSection() {
+  const { address } = useWallet();
+  const [pendingClaims, setPendingClaims] = React.useState<ClaimableBalance[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [showInstructions, setShowInstructions] = React.useState<Record<number, string>>({});
+
+  React.useEffect(() => {
+    if (!address) {
+      setIsLoading(false);
+      return;
+    }
+
+    const loadClaims = async () => {
+      try {
+        const result = await claimService.getEmployeeClaims(Number(address), { limit: 100 });
+        const pending = result.data.filter((c) => c.status === 'pending');
+        setPendingClaims(pending);
+      } catch (err) {
+        console.error('Failed to load pending claims:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void loadClaims();
+  }, [address]);
+
+  const handleShowInstructions = async (claim: ClaimableBalance) => {
+    const instructions = await claimService.generateClaimInstructions(
+      claim.asset_code,
+      claim.asset_issuer || undefined,
+      claim.amount
+    );
+    setShowInstructions((prev) => ({ ...prev, [claim.id]: instructions }));
+  };
+
+  if (isLoading) {
+    return null;
+  }
+
+  if (pendingClaims.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="p-4 rounded-xl bg-[rgba(255,213,0,0.08)] border border-[rgba(255,213,0,0.3)]">
+      <div className="flex items-center gap-2 mb-4">
+        <Gift className="w-5 h-5 text-[#ffd500]" />
+        <h3 className="font-semibold text-[#ffd500]">Pending Claimable Balances</h3>
+        <span className="px-2 py-0.5 text-xs rounded-full bg-[rgba(255,213,0,0.2)] text-[#ffd500]">
+          {pendingClaims.length}
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        {pendingClaims.map((claim) => (
+          <div
+            key={claim.id}
+            className="p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-hi)]"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <span className="text-lg font-semibold">
+                  {claimService.formatClaimAmount(claim.amount, claim.asset_code)}
+                </span>
+                {claim.expires_at && (
+                  <span className="ml-2 text-xs text-[var(--muted)]">
+                    Expires: {new Date(claim.expires_at).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+              <span className="px-2 py-1 text-xs font-medium rounded-full bg-[rgba(255,213,0,0.2)] text-[#ffd500]">
+                Pending Claim
+              </span>
+            </div>
+
+            {showInstructions[claim.id] ? (
+              <div className="mt-3 p-3 rounded bg-[var(--bg-base)] border border-[var(--border-hi)]">
+                <pre className="text-xs whitespace-pre-wrap font-mono text-[var(--text-secondary)]">
+                  {showInstructions[claim.id]}
+                </pre>
+              </div>
+            ) : (
+              <button
+                onClick={() => void handleShowInstructions(claim)}
+                className="mt-2 flex items-center gap-1.5 text-xs text-[var(--accent)] hover:underline"
+              >
+                <Info className="w-3.5 h-3.5" />
+                How to claim this payment
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /* ── Helper: status badge ────────── */
 function StatusBadge({ status }: { status: EmployeeTransaction['status'] }) {
@@ -160,6 +262,9 @@ const EmployeePortal: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ── Pending Claims Section ─────── */}
+      <PendingClaimsSection />
 
       {/* ── Stats Cards ──────────────── */}
       <div className={styles.statsRow}>

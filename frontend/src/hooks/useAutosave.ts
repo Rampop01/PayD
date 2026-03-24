@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 /**
  * Custom hook for autosaving form data to localStorage with debouncing.
@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback } from 'react';
 export function useAutosave<T>(key: string, data: T, delay: number = 1000) {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const isFirstSaveCycle = useRef(true);
 
   // Load initial data from local storage if available
   // This helper is intended to be used by the component to initialize its state
@@ -29,8 +30,12 @@ export function useAutosave<T>(key: string, data: T, delay: number = 1000) {
   }, [key]);
 
   useEffect(() => {
-    // Don't save if data is empty/initial (optional check, depends on use case)
-    // For now, we save everything to ensure state sync.
+    // Skip the first cycle so existing draft state can be restored
+    // by the screen without being overwritten by initial defaults.
+    if (isFirstSaveCycle.current) {
+      isFirstSaveCycle.current = false;
+      return;
+    }
 
     setSaving(true);
 
