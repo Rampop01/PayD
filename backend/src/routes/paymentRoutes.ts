@@ -11,5 +11,6 @@ router.use(authenticateJWT);
 router.get('/anchor-info', PaymentController.getAnchorInfo);
 router.post('/sep31/initiate', isolateOrganization, require2FA, PaymentController.initiateSEP31);
 router.get('/sep31/status/:domain/:id', PaymentController.getStatus);
+router.post('/pathfind', PaymentController.findPaths);
 
 export default router;

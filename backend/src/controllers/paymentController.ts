@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AnchorService } from '../services/anchorService.js';
 import { Keypair } from '@stellar/stellar-sdk';
+import { findConversionPaths, type PathfindRequest } from '../services/crossAssetPaymentService.js';
 
 export class PaymentController {
   /**
@@ -40,6 +41,29 @@ export class PaymentController {
       res.json(result);
     } catch (error: any) {
       console.error('SEP-31 Initiation Error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  /**
+   * POST /api/payments/pathfind
+   */
+  static async findPaths(req: Request, res: Response) {
+    const { fromAsset, toAsset, amount } = req.body as PathfindRequest;
+
+    if (!fromAsset || !toAsset || !amount || amount <= 0) {
+      return res
+        .status(400)
+        .json({
+          error: 'Invalid pathfind request: fromAsset, toAsset, and positive amount required',
+        });
+    }
+
+    try {
+      const paths = await findConversionPaths({ fromAsset, toAsset, amount });
+      res.json({ paths });
+    } catch (error: any) {
+      console.error('Pathfinding error:', error);
       res.status(500).json({ error: error.message });
     }
   }
