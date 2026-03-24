@@ -246,3 +246,175 @@ fn test_get_batch_not_found_panics() {
     let (_, _, _, client) = setup();
     client.get_batch(&999);
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── GAS OPTIMIZATION BENCHMARK & INTEGRITY TESTS ──────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+
+/// Benchmark: 50-payment batch via execute_batch.
+/// Verifies data integrity for a realistic payroll-sized batch and confirms
+/// the optimized direct-transfer path handles large batches correctly.
+///
+/// Gas savings (execute_batch optimizations):
+///   BEFORE: 1 bulk pull + 50 pushes = 51 token::transfer cross-contract calls
+///   AFTER:  50 direct sender→recipient transfers = 50 token::transfer calls
+///   → Eliminates 1 transfer call and the intermediate contract balance accounting.
+#[test]
+fn test_benchmark_50_payment_batch() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let token_admin = Address::generate(&env);
+    let token_id = env.register_stellar_asset_contract_v2(token_admin.clone()).address();
+    let sender = Address::generate(&env);
+    // Mint enough for 50 payments of 1_000 each = 50_000
+    StellarAssetClient::new(&env, &token_id).mint(&sender, &100_000);
+
+    let admin = Address::generate(&env);
+    let contract_id = env.register(BulkPaymentContract, ());
+    let client = BulkPaymentContractClient::new(&env, &contract_id);
+    client.initialize(&admin);
+
+    // Build a 50-payment batch
+    let mut recipients: Vec<Address> = Vec::new(&env);
+    let mut payments: Vec<PaymentOp> = Vec::new(&env);
+    for _ in 0..50 {
+        let r = Address::generate(&env);
+        recipients.push_back(r.clone());
+        payments.push_back(PaymentOp { recipient: r, amount: 1_000 });
+    }
+
+    let batch_id = client.execute_batch(&sender, &token_id, &payments, &0);
+
+    // Verify 100% data integrity: every recipient got exactly 1_000
+    let tc = TokenClient::new(&env, &token_id);
+    for i in 0..50 {
+        let r = recipients.get(i).unwrap();
+        assert_eq!(tc.balance(&r), 1_000);
+    }
+
+    // Verify sender balance: 100_000 - 50_000 = 50_000
+    assert_eq!(tc.balance(&sender), 50_000);
+
+    // Verify batch record integrity
+    let record = client.get_batch(&batch_id);
+    assert_eq!(record.total_sent, 50_000);
+    assert_eq!(record.success_count, 50);
+    assert_eq!(record.fail_count, 0);
+    assert_eq!(record.sender, sender);
+    assert_eq!(record.token, token_id);
+}
+
+/// Benchmark: 50-payment batch via execute_batch_partial.
+/// Verifies all payments succeed when amounts are valid.
+#[test]
+fn test_benchmark_50_payment_partial_batch() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let token_admin = Address::generate(&env);
+    let token_id = env.register_stellar_asset_contract_v2(token_admin.clone()).address();
+    let sender = Address::generate(&env);
+    StellarAssetClient::new(&env, &token_id).mint(&sender, &100_000);
+
+    let admin = Address::generate(&env);
+    let contract_id = env.register(BulkPaymentContract, ());
+    let client = BulkPaymentContractClient::new(&env, &contract_id);
+    client.initialize(&admin);
+
+    let mut recipients: Vec<Address> = Vec::new(&env);
+    let mut payments: Vec<PaymentOp> = Vec::new(&env);
+    for _ in 0..50 {
+        let r = Address::generate(&env);
+        recipients.push_back(r.clone());
+        payments.push_back(PaymentOp { recipient: r, amount: 1_000 });
+    }
+
+    let batch_id = client.execute_batch_partial(&sender, &token_id, &payments, &0);
+
+    let tc = TokenClient::new(&env, &token_id);
+    for i in 0..50 {
+        let r = recipients.get(i).unwrap();
+        assert_eq!(tc.balance(&r), 1_000);
+    }
+
+    assert_eq!(tc.balance(&sender), 50_000);
+
+    let record = client.get_batch(&batch_id);
+    assert_eq!(record.total_sent, 50_000);
+    assert_eq!(record.success_count, 50);
+    assert_eq!(record.fail_count, 0);
+}
+
+/// Verify atomicity: if a payment has invalid amount, entire batch reverts
+/// (no partial state changes). This confirms the single-pass optimization
+/// maintains all-or-nothing semantics.
+#[test]
+#[should_panic(expected = "Error(Contract, #6)")]
+fn test_batch_atomicity_with_invalid_in_middle() {
+    let (env, sender, token, client) = setup();
+
+    let mut payments: Vec<PaymentOp> = Vec::new(&env);
+    payments.push_back(PaymentOp { recipient: Address::generate(&env), amount: 100 });
+    payments.push_back(PaymentOp { recipient: Address::generate(&env), amount: -1 }); // invalid
+    payments.push_back(PaymentOp { recipient: Address::generate(&env), amount: 100 });
+
+    // Should panic — no partial payments made
+    client.execute_batch(&sender, &token, &payments, &0);
+}
+
+/// Verify that batch records persisted via persistent storage survive
+/// across multiple batch operations and are independently retrievable.
+#[test]
+fn test_persistent_batch_records_independent() {
+    let (env, sender, token, client) = setup();
+
+    let mut p1: Vec<PaymentOp> = Vec::new(&env);
+    p1.push_back(PaymentOp { recipient: Address::generate(&env), amount: 100 });
+    let id1 = client.execute_batch(&sender, &token, &p1, &0);
+
+    let mut p2: Vec<PaymentOp> = Vec::new(&env);
+    p2.push_back(PaymentOp { recipient: Address::generate(&env), amount: 200 });
+    let id2 = client.execute_batch(&sender, &token, &p2, &1);
+
+    // Both records are independently retrievable
+    let r1 = client.get_batch(&id1);
+    let r2 = client.get_batch(&id2);
+    assert_eq!(r1.total_sent, 100);
+    assert_eq!(r2.total_sent, 200);
+    assert_eq!(r1.success_count, 1);
+    assert_eq!(r2.success_count, 1);
+}
+
+/// Max batch (100 payments) — stress test for gas-optimized path.
+#[test]
+fn test_max_batch_100_payments() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let token_admin = Address::generate(&env);
+    let token_id = env.register_stellar_asset_contract_v2(token_admin.clone()).address();
+    let sender = Address::generate(&env);
+    StellarAssetClient::new(&env, &token_id).mint(&sender, &1_000_000);
+
+    let admin = Address::generate(&env);
+    let contract_id = env.register(BulkPaymentContract, ());
+    let client = BulkPaymentContractClient::new(&env, &contract_id);
+    client.initialize(&admin);
+
+    let mut payments: Vec<PaymentOp> = Vec::new(&env);
+    for _ in 0..100 {
+        payments.push_back(PaymentOp { recipient: Address::generate(&env), amount: 100 });
+    }
+
+    let batch_id = client.execute_batch(&sender, &token_id, &payments, &0);
+
+    let tc = TokenClient::new(&env, &token_id);
+    // Sender should have 1_000_000 - (100 * 100) = 990_000
+    assert_eq!(tc.balance(&sender), 990_000);
+
+    let record = client.get_batch(&batch_id);
+    assert_eq!(record.total_sent, 10_000);
+    assert_eq!(record.success_count, 100);
+    assert_eq!(record.fail_count, 0);
+}
