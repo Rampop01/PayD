@@ -72,13 +72,12 @@ export function useBulkPaymentContract(contractId: string) {
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getPaymentStatus = async (paymentId: string) => {
     return hook.invoke({
       method: 'get_payment_status',
       args: [paymentId],
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return,@typescript-eslint/no-explicit-any
-      parseResult: ((raw: unknown) => scValToNative(raw as xdr.ScVal)) as any,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      parseResult: (raw: unknown) => scValToNative(raw as xdr.ScVal) as unknown as TResult,
     });
   };
 
@@ -150,13 +149,12 @@ export function useRevenueSplitContract(contractId: string) {
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getRoundStatus = async (roundId: string) => {
     return hook.invoke({
       method: 'get_round_status',
       args: [roundId],
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return,@typescript-eslint/no-explicit-any
-      parseResult: ((raw: unknown) => scValToNative(raw as xdr.ScVal)) as any,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      parseResult: (raw: unknown) => scValToNative(raw as xdr.ScVal) as unknown as TResult,
     });
   };
 
