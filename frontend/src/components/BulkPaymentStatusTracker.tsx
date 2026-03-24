@@ -82,7 +82,7 @@ export function BulkPaymentStatusTracker({ organizationId }: BulkPaymentStatusTr
 
   const { notifyError, notifySuccess } = useNotification();
   const { socket } = useSocket();
-  const { address, requireWallet } = useWallet();
+  const { requireWallet } = useWallet();
   const { sign } = useWalletSigning();
 
   const loadRuns = useCallback(async () => {
