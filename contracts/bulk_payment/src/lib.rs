@@ -20,6 +20,7 @@ pub enum ContractError {
     AmountOverflow     = 7,
     SequenceMismatch   = 8,
     BatchNotFound      = 9,
+    Paused             = 10,
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────
@@ -49,6 +50,11 @@ pub struct PaymentSkippedEvent {
     pub amount: i128,
 }
 
+#[contractevent]
+pub struct ContractStatusChanged {
+    pub paused: bool,
+}
+
 // ── Storage types ─────────────────────────────────────────────────────────────
 
 #[contracttype]
@@ -75,6 +81,7 @@ pub enum DataKey {
     BatchCount,
     Batch(u64),
     Sequence,
+    IsPaused,
 }
 
 const MAX_BATCH_SIZE: u32 = 100;
@@ -102,6 +109,17 @@ impl BulkPaymentContract {
         Ok(())
     }
 
+    pub fn set_paused(env: Env, paused: bool) -> Result<(), ContractError> {
+        Self::require_admin(&env)?;
+        env.storage().instance().set(&DataKey::IsPaused, &paused);
+        ContractStatusChanged { paused }.publish(&env);
+        Ok(())
+    }
+
+    pub fn is_paused(env: Env) -> bool {
+        env.storage().instance().get(&DataKey::IsPaused).unwrap_or(false)
+    }
+
     /// All-or-nothing batch. Any failed transfer reverts the entire call.
     /// Wrap in a fee-bump transaction envelope off-chain for high-traffic scenarios.
     pub fn execute_batch(
@@ -111,6 +129,7 @@ impl BulkPaymentContract {
         payments: Vec<PaymentOp>,
         expected_sequence: u64,
     ) -> Result<u64, ContractError> {
+        Self::require_not_paused(&env)?;
         sender.require_auth();
         Self::check_and_advance_sequence(&env, expected_sequence)?;
 
@@ -147,7 +166,7 @@ impl BulkPaymentContract {
             status: soroban_sdk::symbol_short!("completed"),
         });
 
-        BatchExecutedEvent { batch_id, total_sent: total };
+        BatchExecutedEvent { batch_id, total_sent: total }.publish(&env);
         Ok(batch_id)
     }
 
@@ -159,6 +178,7 @@ impl BulkPaymentContract {
         payments: Vec<PaymentOp>,
         expected_sequence: u64,
     ) -> Result<u64, ContractError> {
+        Self::require_not_paused(&env)?;
         sender.require_auth();
         Self::check_and_advance_sequence(&env, expected_sequence)?;
 
@@ -192,8 +212,7 @@ impl BulkPaymentContract {
                 PaymentSkippedEvent {
                     recipient: op.recipient.clone(),
                     amount: op.amount,
-                }
-               ;
+                }.publish(&env);
                 continue;
             }
             token_client.transfer(&contract_addr, &op.recipient, &op.amount);
@@ -203,8 +222,7 @@ impl BulkPaymentContract {
             PaymentSentEvent {
                 recipient: op.recipient.clone(),
                 amount: op.amount,
-            }
-            ;
+            }.publish(&env);
         }
 
         if remaining > 0 {
@@ -229,7 +247,7 @@ impl BulkPaymentContract {
             status,
         });
 
-        BatchPartialEvent { batch_id, success_count, fail_count };
+            BatchPartialEvent { batch_id, success_count, fail_count }.publish(&env);
         Ok(batch_id)
     }
 
@@ -257,6 +275,13 @@ impl BulkPaymentContract {
             .get(&DataKey::Admin)
             .ok_or(ContractError::NotInitialized)?;
         admin.require_auth();
+        Ok(())
+    }
+
+    fn require_not_paused(env: &Env) -> Result<(), ContractError> {
+        if env.storage().instance().get(&DataKey::IsPaused).unwrap_or(false) {
+            return Err(ContractError::Paused);
+        }
         Ok(())
     }
 

@@ -246,3 +246,36 @@ fn test_get_batch_not_found_panics() {
     let (_, _, _, client) = setup();
     client.get_batch(&999);
 }
+
+// ── pause ─────────────────────────────────────────────────────────────────────
+
+#[test]
+fn test_pause_unpause_works() {
+    let (env, _, _, client) = setup();
+
+    assert_eq!(client.is_paused(), false);
+    client.set_paused(&true);
+    assert_eq!(client.is_paused(), true);
+    client.set_paused(&false);
+    assert_eq!(client.is_paused(), false);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #10)")]
+fn test_execute_batch_fails_when_paused() {
+    let (env, sender, token, client) = setup();
+    client.set_paused(&true);
+
+    let payments = one_payment(&env);
+    client.execute_batch(&sender, &token, &payments, &0);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #10)")]
+fn test_execute_batch_partial_fails_when_paused() {
+    let (env, sender, token, client) = setup();
+    client.set_paused(&true);
+
+    let payments = one_payment(&env);
+    client.execute_batch_partial(&sender, &token, &payments, &0);
+}
