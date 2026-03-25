@@ -77,22 +77,53 @@ export class TransactionAuditService {
   }
 
   /**
-   * List audit records with pagination, optionally filtered by source account.
+   * List audit records with pagination and optional filters.
    */
   static async list(
     page: number = 1,
     limit: number = 20,
-    sourceAccount?: string
+    filters: {
+      sourceAccount?: string;
+      search?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      successful?: boolean;
+    } = {}
   ): Promise<{ data: AuditRecord[]; total: number }> {
+    const { sourceAccount, search, dateFrom, dateTo, successful } = filters;
     const offset = (page - 1) * limit;
-    const values: (string | number)[] = [];
+    const values: (string | number | boolean)[] = [];
     let paramIdx = 1;
 
-    let where = '';
+    const conditions: string[] = [];
+
     if (sourceAccount) {
-      where = `WHERE source_account = $${paramIdx++}`;
+      conditions.push(`source_account = $${paramIdx++}`);
       values.push(sourceAccount);
     }
+
+    if (search) {
+      conditions.push(`(tx_hash ILIKE $${paramIdx} OR source_account ILIKE $${paramIdx})`);
+      values.push(`%${search}%`);
+      paramIdx++;
+    }
+
+    if (dateFrom) {
+      conditions.push(`stellar_created_at >= $${paramIdx++}`);
+      values.push(dateFrom);
+    }
+
+    if (dateTo) {
+      conditions.push(`stellar_created_at <= $${paramIdx++}`);
+      values.push(dateTo);
+    }
+
+    if (successful !== undefined) {
+      conditions.push(`successful = $${paramIdx++}`);
+      values.push(successful);
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const countResult = await pool.query(
       `SELECT COUNT(*) FROM transaction_audit_logs ${where}`,

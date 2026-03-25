@@ -115,46 +115,92 @@ export class EmployeeService {
   }
 
   async findAll(organization_id: number, params: EmployeeQueryInput) {
-    const { page = 1, limit = 10, search, status, department } = params;
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      status,
+      department,
+      hire_date_from,
+      hire_date_to,
+      withdrawal_preference,
+      salary_min,
+      salary_max,
+      sort_by = 'created_at',
+      sort_order = 'desc',
+    } = params;
     const offset = (page - 1) * limit;
 
-    let query = `
-      SELECT *, count(*) OVER() as total_count
-      FROM employees
-      WHERE deleted_at IS NULL
-    `;
+    const allowedSortColumns = ['created_at', 'first_name', 'last_name', 'email', 'hire_date', 'base_salary'];
+    const sortColumn = allowedSortColumns.includes(sort_by) ? sort_by : 'created_at';
+    const sortDirection = sort_order === 'asc' ? 'ASC' : 'DESC';
+
+    let whereClause = `WHERE deleted_at IS NULL`;
     const values: (string | number)[] = [];
     let paramIndex = 1;
 
     if (organization_id) {
-      query += ` AND organization_id = $${paramIndex++}`;
+      whereClause += ` AND organization_id = $${paramIndex++}`;
       values.push(organization_id);
     }
 
     if (status) {
-      query += ` AND status = $${paramIndex++}`;
+      whereClause += ` AND status = $${paramIndex++}`;
       values.push(status);
     }
 
     if (department) {
-      query += ` AND department = $${paramIndex++}`;
+      whereClause += ` AND department = $${paramIndex++}`;
       values.push(department);
     }
 
+    let ftsParamIndex: number | null = null;
     if (search) {
-      query += ` AND (
-        first_name ILIKE $${paramIndex} OR
-        last_name ILIKE $${paramIndex} OR
-        email ILIKE $${paramIndex} OR
-        position ILIKE $${paramIndex} OR
-        job_title ILIKE $${paramIndex} OR
-        phone ILIKE $${paramIndex}
+      ftsParamIndex = paramIndex;
+      whereClause += ` AND (
+        search_vector @@ plainto_tsquery('english', $${paramIndex})
+        OR wallet_address ILIKE $${paramIndex + 1}
       )`;
-      values.push(`%${search}%`);
-      paramIndex++;
+      values.push(search, `%${search}%`);
+      paramIndex += 2;
     }
 
-    query += ` ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+    if (hire_date_from) {
+      whereClause += ` AND hire_date >= $${paramIndex++}`;
+      values.push(hire_date_from);
+    }
+
+    if (hire_date_to) {
+      whereClause += ` AND hire_date <= $${paramIndex++}`;
+      values.push(hire_date_to);
+    }
+
+    if (withdrawal_preference) {
+      whereClause += ` AND withdrawal_preference = $${paramIndex++}`;
+      values.push(withdrawal_preference);
+    }
+
+    if (salary_min !== undefined) {
+      whereClause += ` AND base_salary >= $${paramIndex++}`;
+      values.push(salary_min);
+    }
+
+    if (salary_max !== undefined) {
+      whereClause += ` AND base_salary <= $${paramIndex++}`;
+      values.push(salary_max);
+    }
+
+    const orderBy = ftsParamIndex !== null
+      ? `ORDER BY ts_rank(search_vector, plainto_tsquery('english', $${ftsParamIndex})) DESC, ${sortColumn} ${sortDirection}`
+      : `ORDER BY ${sortColumn} ${sortDirection}`;
+
+    const query = `
+      SELECT *, count(*) OVER() as total_count
+      FROM employees
+      ${whereClause}
+      ${orderBy}
+      LIMIT $${paramIndex++} OFFSET $${paramIndex++}
+    `;
     values.push(limit, offset);
 
     const result = await pool.query(query, values);

@@ -59,6 +59,30 @@ export const employeeQuerySchema = z.object({
   status: z.enum(['active', 'inactive', 'pending']).optional(),
   department: z.string().optional(),
   organization_id: z.string().regex(/^\d+$/).transform(Number).optional(),
+  hire_date_from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
+    .optional(),
+  hire_date_to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
+    .optional(),
+  withdrawal_preference: z.enum(['bank', 'mobile_money', 'crypto']).optional(),
+  salary_min: z
+    .string()
+    .regex(/^\d+(\.\d+)?$/)
+    .transform(Number)
+    .optional(),
+  salary_max: z
+    .string()
+    .regex(/^\d+(\.\d+)?$/)
+    .transform(Number)
+    .optional(),
+  sort_by: z
+    .enum(['created_at', 'first_name', 'last_name', 'email', 'hire_date', 'base_salary'])
+    .optional()
+    .default('created_at'),
+  sort_order: z.enum(['asc', 'desc']).optional().default('desc'),
 });
 
 export type CreateEmployeeInput = z.infer<typeof createEmployeeSchema>;
