@@ -47,7 +47,7 @@ export async function fetchSchedules(organizationId: number): Promise<PayrollSch
         throw new Error(`Failed to fetch schedules (${response.status})`);
     }
 
-    return response.json();
+    return response.json() as Promise<PayrollSchedule[]>;
 }
 
 export async function saveSchedule(
@@ -68,7 +68,7 @@ export async function saveSchedule(
         throw new Error(`Failed to save schedule (${response.status})`);
     }
 
-    return response.json();
+    return response.json() as Promise<PayrollSchedule>;
 }
 
 export async function cancelSchedule(
@@ -87,5 +87,5 @@ export async function cancelSchedule(
         throw new Error(`Failed to cancel schedule (${response.status})`);
     }
 
-    return response.json();
+    return response.json() as Promise<{ message: string }>;
 }

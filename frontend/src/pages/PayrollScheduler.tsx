@@ -137,8 +137,9 @@ export default function PayrollScheduler() {
       setIsWizardOpen(false);
       notifySuccess('Payroll schedule saved!', 'Configuration persisted and automation active.');
       void refreshSchedules();
-    } catch (err: any) {
-      notifyError('Failed to save schedule', err.message);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      notifyError('Failed to save schedule', errorMessage);
     }
   };
 
@@ -147,8 +148,9 @@ export default function PayrollScheduler() {
       await cancelSchedule(organizationId, scheduleId);
       notifySuccess('Schedule cancelled', 'Automation has been disabled.');
       void refreshSchedules();
-    } catch (err: any) {
-      notifyError('Failed to cancel schedule', err.message);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      notifyError('Failed to cancel schedule', errorMessage);
     }
   };
 
@@ -203,8 +205,9 @@ export default function PayrollScheduler() {
         'USDC'
       );
       void simulate({ envelopeXdr: xdrResult });
-    } catch (err: any) {
-      notifyError('Simulation failed', err.message);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      notifyError('Simulation failed', errorMessage);
     }
   };
 
