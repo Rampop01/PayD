@@ -7,7 +7,7 @@ import { useNotification } from '../hooks/useNotification';
 import { useSocket } from '../hooks/useSocket';
 import { createClaimableBalanceTransaction } from '../services/stellar';
 import { useTranslation } from 'react-i18next';
-import { Card, Heading, Text, Button, Input, Select } from '@stellar/design-system';
+import { Heading, Text, Button, Input, Select } from '@stellar/design-system';
 import {
   fetchSchedules,
   saveSchedule,
@@ -18,7 +18,6 @@ import {
 import { SchedulingWizard } from '../components/SchedulingWizard';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { BulkPaymentStatusTracker } from '../components/BulkPaymentStatusTracker';
-
 import { ContractErrorPanel } from '../components/ContractErrorPanel';
 import { parseContractError, type ContractErrorDetail } from '../utils/contractErrorParser';
 import { HelpLink } from '../components/HelpLink';
@@ -70,19 +69,9 @@ export default function PayrollScheduler() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [activeSchedules, setActiveSchedules] = useState<PayrollSchedule[]>([]);
   const [isLoadingSchedules, setIsLoadingSchedules] = useState(true);
+  const [contractError, setContractError] = useState<ContractErrorDetail | null>(null);
 
   const organizationId = 1;
-  const { notifySuccess, notify } = useNotification();
-  const { socket, subscribeToTransaction, unsubscribeFromTransaction } = useSocket();
-  const [formData, setFormData] = useState<PayrollFormState>(initialFormState);
-  const [isBroadcasting, setIsBroadcasting] = useState(false);
-  const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [activeSchedule, setActiveSchedule] = useState<{
-    frequency: string;
-    timeOfDay: string;
-  } | null>(null);
-  const [nextRunDate, setNextRunDate] = useState<Date | null>(null);
-  const [contractError, setContractError] = useState<ContractErrorDetail | null>(null);
 
   const [pendingClaims, setPendingClaims] = useState<PendingClaim[]>(() => {
     const saved = localStorage.getItem('pending-claims');
@@ -114,11 +103,9 @@ export default function PayrollScheduler() {
     const saved = loadSavedData();
     if (saved) {
       setFormData(saved);
-      notify('Recovered unsaved payroll draft');
     }
     void refreshSchedules();
   }, [loadSavedData]);
-  }, [loadSavedData, notify]);
 
   const refreshSchedules = async () => {
     setIsLoadingSchedules(true);
@@ -159,7 +146,7 @@ export default function PayrollScheduler() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev: PayrollFormState) => ({ ...prev, [name]: value }));
     if (simulationResult) {
       resetSimulation();
       setContractError(null);
@@ -183,20 +170,6 @@ export default function PayrollScheduler() {
 
     setContractError(null);
 
-    // Mock XDR for simulation demonstration
-    const mockXdr =
-      'AAAAAgAAAABmF8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-
-    const result = await simulate({ envelopeXdr: mockXdr });
-    if (result && !result.success) {
-      const parsed = parseContractError(result.envelopeXdr, result.description);
-      setContractError(parsed);
-    }
-  };
-
-  const handleBroadcast = async () => {
-    setIsBroadcasting(true);
-    setContractError(null);
     try {
       const mockRecipientPublicKey = 'GBX3X...';
       const xdrResult = await createClaimableBalanceTransaction(
@@ -205,7 +178,11 @@ export default function PayrollScheduler() {
         formData.amount,
         'USDC'
       );
-      void simulate({ envelopeXdr: xdrResult });
+      const result = await simulate({ envelopeXdr: xdrResult });
+      if (result && !result.success) {
+        const parsed = parseContractError(result.envelopeXdr, result.description);
+        setContractError(parsed);
+      }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       notifyError('Simulation failed', errorMessage);
@@ -214,6 +191,7 @@ export default function PayrollScheduler() {
 
   const handleBroadcast = async () => {
     setIsBroadcasting(true);
+    setContractError(null);
     try {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       notifySuccess('Transaction Broadcasted', 'Payroll distribution initiated successfully.');

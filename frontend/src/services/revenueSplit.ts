@@ -11,13 +11,13 @@ import {
 import { simulateTransaction } from './transactionSimulation';
 
 const API_BASE_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:3000';
+  import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const DEFAULT_RPC_URL =
-  (import.meta.env.PUBLIC_STELLAR_RPC_URL as string | undefined) ||
+  import.meta.env.PUBLIC_STELLAR_RPC_URL ||
   'https://soroban-testnet.stellar.org';
 
 const READ_METHOD_CANDIDATES = (
-  (import.meta.env.VITE_REVENUE_SPLIT_READ_METHODS as string | undefined) ||
+  import.meta.env.VITE_REVENUE_SPLIT_READ_METHODS ||
   'get_allocations,get_recipients,recipients'
 )
   .split(',')
@@ -25,7 +25,7 @@ const READ_METHOD_CANDIDATES = (
   .filter(Boolean);
 
 const UPDATE_METHOD_CANDIDATES = (
-  (import.meta.env.VITE_REVENUE_SPLIT_UPDATE_METHODS as string | undefined) ||
+  import.meta.env.VITE_REVENUE_SPLIT_UPDATE_METHODS ||
   'update_recipients,set_allocations'
 )
   .split(',')
@@ -58,7 +58,7 @@ function normalizeBaseUrl(url: string): string {
 }
 
 function getNetworkPassphrase(): string {
-  const network = (import.meta.env.PUBLIC_STELLAR_NETWORK as string | undefined)?.toUpperCase();
+  const network = import.meta.env.PUBLIC_STELLAR_NETWORK?.toUpperCase();
   return network === 'MAINNET' ? Networks.PUBLIC : Networks.TESTNET;
 }
 
@@ -89,13 +89,13 @@ function payrollAuthHeaders(): Record<string, string> {
 function resolveOrgPublicKey(explicit?: string): string | null {
   if (explicit) return explicit;
   if (typeof localStorage === 'undefined') {
-    return (import.meta.env.VITE_ORG_PUBLIC_KEY as string | undefined) || null;
+    return import.meta.env.VITE_ORG_PUBLIC_KEY || null;
   }
 
   return (
     localStorage.getItem('orgPublicKey') ||
     localStorage.getItem('organizationPublicKey') ||
-    (import.meta.env.VITE_ORG_PUBLIC_KEY as string | undefined) ||
+    import.meta.env.VITE_ORG_PUBLIC_KEY ||
     null
   );
 }
