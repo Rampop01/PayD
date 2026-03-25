@@ -132,7 +132,12 @@ Every payment includes:
 ### Blockchain
 
 - **Stellar Network** - Primary blockchain
-- **Soroban** - Smart contracts (future expansion)
+- **Soroban** - Smart contracts including:
+  - **Bulk Payment**: Efficiently distribute funds to multiple recipients.
+  - **Revenue Split**: Automate the division of incoming payments.
+  - **Vesting Escrow**: Lock and gradually release tokens over time.
+  - **Cross-Asset Payment**: Seamlessly convert assets during payments.
+  - **Asset Path Payment**: Advanced routing for payments across different assets.
 - **Stellar Wallets Kit** - Wallet integration
 
 ### DevOps
@@ -158,58 +163,61 @@ Ensure you have the following installed:
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/your-org/payD.git](https://github.com/your-org/payD.git)
-   cd payD
-   Install dependencies:
-   bash
-   npm install
-   Environment Setup:
-   bash
-   cp .env.example .env
+   git clone https://github.com/Gildado/PayD.git
+   cd PayD
    ```
 
-# Edit .env with your configuration
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-Database Setup:
-bash
+3. **Environment Setup:**
+   ```bash
+   cp .env.example .env
+   ```
+   *Edit `.env` with your configuration.*
 
-# Using Docker
+4. **Database Setup:**
+   ```bash
+   # Using Docker
+   docker run --name payd-postgres -e POSTGRES_PASSWORD=mypassword -p 5432:5432 -d postgres:15
+   ```
+   *Or set up PostgreSQL manually.*
 
-docker run --name payd-postgres -e POSTGRES_PASSWORD=mypassword -d postgres:15
+### Configuration
 
-# Or set up PostgreSQL manually
+Edit `.env` with the following key variables:
 
-Configuration
-Edit
-.env
-with the following key variables:
-
-env
-
+```env
 # Stellar Network
-
 STELLAR_NETWORK=testnet # or mainnet
 STELLAR_HORIZON_URL=https://horizon-testnet.stellar.org
 
 # Database
-
 DATABASE_URL=postgresql://user:password@localhost:5432/payd
 
 # API Keys
-
 STELLAR_SECRET_KEY=your_issuer_secret_key
 ANCHOR_API_KEY=your_anchor_service_key
 
 # JWT
-
 JWT_SECRET=your_jwt_secret
-Development
+```
+
+### Development
+
 Start the development server:
-bash
+```bash
 npm run dev
+```
+
 Build for production:
-bash
+```bash
 npm run build
+```
+
 Run tests:
-bash
-npm run test.
+```bash
+npm run test
+```

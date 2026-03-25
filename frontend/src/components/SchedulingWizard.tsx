@@ -36,27 +36,94 @@ export const SchedulingWizard = ({
   const handleNext = () => setStep((s: number) => Math.min(s + 1, 3));
   const handleBack = () => setStep((s: number) => Math.max(s - 1, 1));
 
+  const parseTimeOfDay = (time: string) => {
+    const [hhRaw, mmRaw] = time.split(':');
+    const hh = Number.parseInt(hhRaw ?? '0', 10);
+    const mm = Number.parseInt(mmRaw ?? '0', 10);
+    return {
+      hours: Number.isFinite(hh) ? hh : 0,
+      minutes: Number.isFinite(mm) ? mm : 0,
+    };
+  };
+
+  const clampDayOfMonth = (year: number, monthIndex: number, desired: number) => {
+    const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+    return Math.max(1, Math.min(desired, lastDay));
+  };
+
   const generatePreviewDates = () => {
-    const dates = [];
+    const dates: Date[] = [];
     const now = new Date();
-    // Simplified logic for preview demonstration
-    for (let i = 1; i <= 3; i++) {
-      const d = new Date(now);
-      if (config.frequency === 'monthly') {
-        d.setMonth(d.getMonth() + i);
-        d.setDate(config.dayOfMonth || 1);
-      } else if (config.frequency === 'weekly') {
-        d.setDate(d.getDate() + i * 7);
-      } else if (config.frequency === 'biweekly') {
-        d.setDate(d.getDate() + i * 14);
+
+    const { hours, minutes } = parseTimeOfDay(config.timeOfDay);
+
+    if (config.frequency === 'monthly') {
+      const desiredDay = config.dayOfMonth || 1;
+
+      const year = now.getFullYear();
+      const monthIndex = now.getMonth();
+
+      // Candidate run this month at configured time
+      let candidate = new Date(
+        year,
+        monthIndex,
+        clampDayOfMonth(year, monthIndex, desiredDay),
+        hours,
+        minutes,
+        0,
+        0
+      );
+
+      // If candidate already passed, move to next month
+      if (candidate.getTime() <= now.getTime()) {
+        const nextMonthIndex = monthIndex + 1;
+        candidate = new Date(
+          year,
+          nextMonthIndex,
+          clampDayOfMonth(year, nextMonthIndex, desiredDay),
+          hours,
+          minutes,
+          0,
+          0
+        );
       }
 
-      const [hours, minutes] = config.timeOfDay.split(':');
-      d.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      for (let i = 0; i < 3; i++) {
+        const run = new Date(candidate);
+        run.setMonth(run.getMonth() + i);
 
-      // Ensure the date isn't in the past if it's the current period
-      dates.push(d);
+        // Clamp day-of-month after month shift (e.g., 31st -> Feb last day)
+        const y = run.getFullYear();
+        const m = run.getMonth();
+        run.setDate(clampDayOfMonth(y, m, desiredDay));
+
+        dates.push(run);
+      }
+
+      return dates;
     }
+
+    // weekly / biweekly
+    const dayOfWeek = config.dayOfWeek ?? 1; // default Monday
+    const diffDays = (dayOfWeek - now.getDay() + 7) % 7;
+
+    const first = new Date(now);
+    first.setDate(now.getDate() + diffDays);
+    first.setHours(hours, minutes, 0, 0);
+
+    // If it's the target day but time already passed, jump to next week
+    if (diffDays === 0 && first.getTime() <= now.getTime()) {
+      first.setDate(first.getDate() + 7);
+    }
+
+    const stepDays = config.frequency === 'biweekly' ? 14 : 7;
+
+    for (let i = 0; i < 3; i++) {
+      const run = new Date(first);
+      run.setDate(first.getDate() + i * stepDays);
+      dates.push(run);
+    }
+
     return dates;
   };
 

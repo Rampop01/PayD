@@ -168,7 +168,7 @@ export class PayrollAuditService {
     amount: string,
     assetCode: string,
     actor: { type: ActorType; id?: string; email?: string },
-    context?: { ipAddress?: string; userAgent?: string }
+    context?: { ipAddress?: string; userAgent?: string; itemType?: 'base' | 'bonus'; description?: string }
   ): Promise<PayrollAuditLog> {
     return this.log({
       organizationId,
@@ -181,6 +181,10 @@ export class PayrollAuditService {
       actorEmail: actor.email,
       amount,
       assetCode,
+      metadata: {
+        item_type: context?.itemType || 'base',
+        description: context?.description,
+      },
       ipAddress: context?.ipAddress,
       userAgent: context?.userAgent,
     });
@@ -194,7 +198,8 @@ export class PayrollAuditService {
     txHash: string,
     amount: string,
     assetCode: string,
-    actor: { type: ActorType; id?: string; email?: string }
+    actor: { type: ActorType; id?: string; email?: string },
+    itemType?: 'base' | 'bonus'
   ): Promise<PayrollAuditLog> {
     return this.log({
       organizationId,
@@ -210,6 +215,9 @@ export class PayrollAuditService {
       assetCode,
       oldStatus: 'pending',
       newStatus: 'processing',
+      metadata: {
+        item_type: itemType || 'base',
+      },
     });
   }
 
@@ -221,7 +229,8 @@ export class PayrollAuditService {
     txHash: string,
     stellarLedger: number,
     amount: string,
-    assetCode: string
+    assetCode: string,
+    itemType?: 'base' | 'bonus'
   ): Promise<PayrollAuditLog> {
     return this.log({
       organizationId,
@@ -236,6 +245,9 @@ export class PayrollAuditService {
       assetCode,
       oldStatus: 'processing',
       newStatus: 'completed',
+      metadata: {
+        item_type: itemType || 'base',
+      },
     });
   }
 
@@ -247,7 +259,8 @@ export class PayrollAuditService {
     txHash: string,
     errorMessage: string,
     amount: string,
-    assetCode: string
+    assetCode: string,
+    itemType?: 'base' | 'bonus'
   ): Promise<PayrollAuditLog> {
     return this.log({
       organizationId,
@@ -262,6 +275,9 @@ export class PayrollAuditService {
       assetCode,
       oldStatus: 'processing',
       newStatus: 'failed',
+      metadata: {
+        item_type: itemType || 'base',
+      },
     });
   }
 

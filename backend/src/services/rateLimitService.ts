@@ -71,6 +71,11 @@ class RedisClient {
   }
 }
 
+/** Shared Redis connection for caching and rate limits (lazy, same URL). */
+export function getRedisClient(): Redis | null {
+  return RedisClient.getInstance();
+}
+
 export class RateLimitService {
   private redis: Redis | null;
 

@@ -74,6 +74,7 @@ const mockEmployees: EmployeeItem[] = [
 
 export default function EmployeeEntry() {
   const [isAdding, setIsAdding] = useState(false);
+  const [employees, setEmployees] = useState<EmployeeItem[]>(mockEmployees);
   const [formData, setFormData] = useState<EmployeeFormState>(initialFormState);
   const [notification, setNotification] = useState<{
     message: string;
@@ -310,9 +311,23 @@ export default function EmployeeEntry() {
       </div>
 
       <EmployeeList
-        employees={mockEmployees}
+        employees={employees}
         onEmployeeClick={(employee) => console.log('Clicked:', employee.name)}
-        onAddEmployee={(employee) => console.log('Added:', employee)}
+        onAddEmployee={(employee) => {
+          setEmployees((prev) => [...prev, employee]);
+          notifySuccess(`Added ${employee.name}`);
+        }}
+        onEditEmployee={(employee) => {
+          setEmployees((prev) => prev.map((item) => (item.id === employee.id ? employee : item)));
+        }}
+        onRemoveEmployee={(id) => {
+          setEmployees((prev) => prev.filter((item) => item.id !== id));
+        }}
+        onUpdateEmployeeImage={(id, imageUrl) => {
+          setEmployees((prev) =>
+            prev.map((item) => (item.id === id ? { ...item, imageUrl } : item))
+          );
+        }}
       />
     </div>
   );

@@ -15,7 +15,8 @@ import { ContractErrorPanel } from '../components/ContractErrorPanel';
 import { parseContractError, type ContractErrorDetail } from '../utils/contractErrorParser';
 
 export default function CrossAssetPayment() {
-  const { notifySuccess, notifyError } = useNotification();
+  const { notifyError, notifyPaymentSuccess, notifyPaymentFailure, notifyApiError } =
+    useNotification();
   const { socket } = useSocket();
   const { address, connect, requireWallet } = useWallet();
   const { sign } = useWalletSigning();
@@ -56,7 +57,7 @@ export default function CrossAssetPayment() {
           setPaths(nextPaths);
           setSelectedPathId((current) => current || nextPaths[0]?.id || '');
         } catch (error) {
-          notifyError(
+          notifyApiError(
             'Pathfinding failed',
             error instanceof Error ? error.message : 'Failed to fetch conversion paths.'
           );
@@ -88,7 +89,7 @@ export default function CrossAssetPayment() {
       setStatus(nextStatus);
       setLiveStatusMessage(`Live update: ${nextStatus}`);
       if (nextStatus === 'completed' || nextStatus === 'confirmed') {
-        notifySuccess('Cross-asset payment completed', `Transaction ${txHash} settled.`);
+        notifyPaymentSuccess(txHash, 'Cross-asset payment completed');
       }
     };
 
@@ -101,7 +102,7 @@ export default function CrossAssetPayment() {
       socket.off('transaction:update', handler);
       socket.emit('unsubscribe:transaction', submissionTxHash);
     };
-  }, [notifySuccess, socket, submissionTxHash]);
+  }, [notifyPaymentSuccess, socket, submissionTxHash]);
 
   const handleInitiate = async () => {
     const walletAddress = await requireWallet();
@@ -144,7 +145,7 @@ export default function CrossAssetPayment() {
       setSubmissionTxHash(result.txHash);
       setStatus('pending');
       setLiveStatusMessage('Submitted. Waiting for live settlement updates...');
-      notifySuccess('Payment submitted', `On-chain transaction hash: ${result.txHash}`);
+      notifyPaymentSuccess(result.txHash, 'Payment submitted');
     } catch (error) {
       setStatus('error');
       const parsed = parseContractError(
@@ -152,7 +153,7 @@ export default function CrossAssetPayment() {
         error instanceof Error ? error.message : 'An unexpected error occurred.'
       );
       setContractError(parsed);
-      notifyError('Payment failed', parsed.message);
+      notifyPaymentFailure(parsed.message, submissionTxHash ?? undefined);
     }
   };
 

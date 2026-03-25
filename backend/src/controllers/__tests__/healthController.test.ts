@@ -5,13 +5,21 @@ import pg from 'pg';
 import { Redis } from 'ioredis';
 import { StellarService } from '../../services/stellarService.js';
 
+jest.mock('../../config/env', () => ({
+  config: {
+    DATABASE_URL: 'postgres://mock',
+    REDIS_URL: 'redis://mock',
+    NODE_ENV: 'test',
+  },
+}));
+
 jest.mock('pg', () => {
   const mPool = { query: jest.fn() };
   return { Pool: jest.fn(() => mPool) };
 });
 jest.mock('ioredis', () => {
   const mRedis = { ping: jest.fn() };
-  return jest.fn(() => mRedis);
+  return { Redis: jest.fn(() => mRedis) };
 });
 jest.mock('../../services/stellarService', () => ({
   StellarService: {
@@ -30,17 +38,9 @@ describe('HealthController GET /health', () => {
   beforeEach(() => {
     pool = new pg.Pool();
     redisClient = new Redis();
-    mockServer = { root: jest.fn() };
+    mockServer = { feeStats: jest.fn() };
     (StellarService.getServer as jest.Mock).mockReturnValue(mockServer);
-
-    // Mock global configurations to ensure redis triggers internally
-    jest.mock('../../config/env', () => ({
-      config: {
-        DATABASE_URL: 'mock_db',
-        REDIS_URL: 'mock_redis',
-        NODE_ENV: 'test',
-      },
-    }));
+    process.env.BUILD_TIMESTAMP = '2026-03-25T00:00:00.000Z';
 
     jest.clearAllMocks();
   });
@@ -48,12 +48,17 @@ describe('HealthController GET /health', () => {
   it('returns 200 OK when all dependencies are healthy', async () => {
     pool.query.mockResolvedValueOnce({ rows: [] });
     redisClient.ping.mockResolvedValueOnce('PONG');
-    mockServer.root.mockResolvedValueOnce({});
+    mockServer.feeStats.mockResolvedValueOnce({});
 
     const response = await request(app).get('/health');
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe('ok');
+    expect(response.body.build.timestamp).toBe('2026-03-25T00:00:00.000Z');
+    expect(response.body.environment.name).toBe('test');
+    expect(response.body.environment.nodeVersion).toBeDefined();
+    expect(response.body.version).toBeDefined();
+    expect(response.body.uptime).toBeDefined();
     expect(response.body.dependencies.database.status).toBe('connected');
     expect(response.body.dependencies.redis.status).toBe('connected');
     expect(response.body.dependencies.horizon.status).toBe('connected');
@@ -62,7 +67,7 @@ describe('HealthController GET /health', () => {
   it('returns 503 Degraded when Postgres goes down', async () => {
     pool.query.mockRejectedValueOnce(new Error('Connection forced closed'));
     redisClient.ping.mockResolvedValueOnce('PONG');
-    mockServer.root.mockResolvedValueOnce({});
+    mockServer.feeStats.mockResolvedValueOnce({});
 
     const response = await request(app).get('/health');
 
@@ -74,7 +79,7 @@ describe('HealthController GET /health', () => {
   it('returns 503 Degraded when Redis fails', async () => {
     pool.query.mockResolvedValueOnce({ rows: [] });
     redisClient.ping.mockRejectedValueOnce(new Error('Redis timeout'));
-    mockServer.root.mockResolvedValueOnce({});
+    mockServer.feeStats.mockResolvedValueOnce({});
 
     const response = await request(app).get('/health');
 
@@ -86,7 +91,7 @@ describe('HealthController GET /health', () => {
   it('returns 503 Degraded when Horizon fails', async () => {
     pool.query.mockResolvedValueOnce({ rows: [] });
     redisClient.ping.mockResolvedValueOnce('PONG');
-    mockServer.root.mockRejectedValueOnce(new Error('Horizon unreachable'));
+    mockServer.feeStats.mockRejectedValueOnce(new Error('Horizon unreachable'));
 
     const response = await request(app).get('/health');
 

@@ -8,7 +8,7 @@ export class ExportService {
    * Generates a PDF receipt for a single transaction and pipes it to a stream (e.g. Express Response).
    */
   static async generateReceiptPdf(
-    transaction: PayrollTransaction,
+    transaction: PayrollTransaction & { itemType?: 'base' | 'bonus'; description?: string },
     stream: NodeJS.WritableStream
   ): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -21,6 +21,11 @@ export class ExportService {
         stream.on('finish', () => resolve());
         stream.on('error', reject);
         doc.on('error', reject);
+
+        // Determine payment type label
+        const paymentTypeLabel = transaction.itemType === 'bonus' 
+          ? 'Performance Bonus Payment' 
+          : 'Base Salary Payment';
 
         // Header
         doc
@@ -38,6 +43,16 @@ export class ExportService {
           .text(`Transaction Hash: ${transaction.txHash}`)
           .moveDown();
 
+        // Payment Type Badge
+        if (transaction.itemType === 'bonus') {
+          doc
+            .fillColor('#2563eb')
+            .fontSize(10)
+            .text('🎉 PERFORMANCE BONUS', { align: 'center' })
+            .fillColor('#000000')
+            .moveDown();
+        }
+
         // Details Table
         doc.rect(50, doc.y, 500, 20).fill('#eeeeee').stroke();
         doc.fillColor('#000000').fontSize(12);
@@ -48,8 +63,14 @@ export class ExportService {
         doc.moveDown();
         const rowY = doc.y;
         doc.fontSize(10);
-        doc.text(`Salary Payment (${transaction.assetCode || 'Native'})`, 60, rowY);
+        doc.text(`${paymentTypeLabel} (${transaction.assetCode || 'Native'})`, 60, rowY);
         doc.text(transaction.amount || '0', 400, rowY, { width: 90, align: 'right' });
+
+        // Show bonus description if available
+        if (transaction.itemType === 'bonus' && transaction.description) {
+          doc.moveDown();
+          doc.text(`Bonus Reason: ${transaction.description}`, 60, doc.y);
+        }
 
         if (transaction.memo) {
           doc.moveDown();
@@ -75,7 +96,7 @@ export class ExportService {
    */
   static async generatePayrollExcel(
     batchId: string,
-    transactions: PayrollTransaction[],
+    transactions: (PayrollTransaction & { itemType?: 'base' | 'bonus'; description?: string })[],
     stream: NodeJS.WritableStream
   ): Promise<void> {
     try {
@@ -87,15 +108,27 @@ export class ExportService {
       summarySheet.columns = [
         { header: 'Batch ID', key: 'batchId', width: 20 },
         { header: 'Total Transactions', key: 'total', width: 20 },
+        { header: 'Base Salary Items', key: 'baseCount', width: 20 },
+        { header: 'Bonus Items', key: 'bonusCount', width: 20 },
+        { header: 'Total Base Amount', key: 'baseSum', width: 20 },
+        { header: 'Total Bonus Amount', key: 'bonusSum', width: 20 },
         { header: 'Total Amount', key: 'sum', width: 20 },
         { header: 'Generated At', key: 'date', width: 30 },
       ];
 
+      const baseTransactions = transactions.filter(tx => tx.itemType !== 'bonus');
+      const bonusTransactions = transactions.filter(tx => tx.itemType === 'bonus');
       const sumAmount = transactions.reduce((acc, tx) => acc + parseFloat(tx.amount || '0'), 0);
+      const baseSumAmount = baseTransactions.reduce((acc, tx) => acc + parseFloat(tx.amount || '0'), 0);
+      const bonusSumAmount = bonusTransactions.reduce((acc, tx) => acc + parseFloat(tx.amount || '0'), 0);
 
       summarySheet.addRow({
         batchId,
         total: transactions.length,
+        baseCount: baseTransactions.length,
+        bonusCount: bonusTransactions.length,
+        baseSum: baseSumAmount.toString(),
+        bonusSum: bonusSumAmount.toString(),
         sum: sumAmount.toString(),
         date: new Date().toISOString(),
       });
@@ -104,10 +137,12 @@ export class ExportService {
       dataSheet.columns = [
         { header: 'Transaction Hash', key: 'txHash', width: 60 },
         { header: 'Employee ID', key: 'employeeId', width: 20 },
+        { header: 'Payment Type', key: 'itemType', width: 15 },
         { header: 'Amount', key: 'amount', width: 15 },
         { header: 'Asset', key: 'assetCode', width: 15 },
         { header: 'Status', key: 'status', width: 15 },
         { header: 'Date', key: 'timestamp', width: 30 },
+        { header: 'Description', key: 'description', width: 40 },
         { header: 'Memo', key: 'memo', width: 40 },
       ];
 
@@ -115,10 +150,12 @@ export class ExportService {
         dataSheet.addRow({
           txHash: tx.txHash,
           employeeId: tx.employeeId || 'N/A',
+          itemType: tx.itemType === 'bonus' ? 'Bonus' : 'Base Salary',
           amount: tx.amount || '0',
           assetCode: tx.assetCode || 'Native',
           status: tx.successful ? 'Success' : 'Failed',
           timestamp: new Date(tx.timestamp * 1000).toISOString(),
+          description: tx.description || '',
           memo: tx.memo || '',
         });
       });
@@ -143,7 +180,7 @@ export class ExportService {
    * Generates a CSV report of raw transactional data and pipes it to a stream.
    */
   static async generatePayrollCsv(
-    transactions: PayrollTransaction[],
+    transactions: (PayrollTransaction & { itemType?: 'base' | 'bonus'; description?: string })[],
     stream: NodeJS.WritableStream
   ): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -161,10 +198,12 @@ export class ExportService {
             txHash: tx.txHash,
             organizationPublicKey: tx.sourceAccount,
             employeeId: tx.employeeId || 'N/A',
+            paymentType: tx.itemType === 'bonus' ? 'Bonus' : 'Base Salary',
             amount: tx.amount || '0',
             assetCode: tx.assetCode || 'Native',
             assetIssuer: tx.assetIssuer || '',
             status: tx.successful ? 'Success' : 'Failed',
+            description: tx.description || '',
             memo: tx.memo || '',
             timestamp: new Date(tx.timestamp * 1000).toISOString(),
           });

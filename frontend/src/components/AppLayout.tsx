@@ -2,7 +2,9 @@ import React from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import ConnectAccount from '../components/ConnectAccount';
 import AppNav from './AppNav';
-import ThemeToggle from './ThemeToggle';
+import { LanguageSelector } from './LanguageSelector';
+import { ThemeToggle } from './ThemeToggle';
+import { useTranslation } from 'react-i18next';
 
 // ── Page Wrapper ───────────────────────
 const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -12,6 +14,7 @@ const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 // ── Layout ────────────────────────────
 const AppLayout: React.FC = () => {
   const location = useLocation();
+  useTranslation();
 
   return (
     <div
@@ -43,6 +46,7 @@ const AppLayout: React.FC = () => {
         <div className="flex items-center gap-6 ml-auto">
           <AppNav />
           <div className="ml-4 flex items-center gap-3">
+            <LanguageSelector />
             <ThemeToggle />
             <ConnectAccount />
           </div>

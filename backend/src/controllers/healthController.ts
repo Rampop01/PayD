@@ -19,13 +19,20 @@ export class HealthController {
     const timestamp = new Date().toISOString();
     const uptime = process.uptime();
     const version = process.env.npm_package_version || '1.0.0';
+    const buildTimestamp = process.env.BUILD_TIMESTAMP || process.env.BUILD_TIME || 'unknown';
 
     const statusReport: any = {
       status: 'ok',
       timestamp,
       uptime,
       version,
-      environment: config.NODE_ENV,
+      environment: {
+        name: config.NODE_ENV,
+        nodeVersion: process.version,
+      },
+      build: {
+        timestamp: buildTimestamp,
+      },
       dependencies: {
         database: { status: 'unknown' },
         redis: { status: 'unknown' },

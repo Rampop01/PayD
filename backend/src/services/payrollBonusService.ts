@@ -239,6 +239,22 @@ export class PayrollBonusService {
     };
   }
 
+  /**
+   * Get payroll item by transaction hash (for receipt generation)
+   */
+  static async getPayrollItemByTxHash(txHash: string): Promise<PayrollItemWithEmployee | null> {
+    const result = await pool.query(
+      `SELECT pi.*, e.first_name as employee_first_name, e.last_name as employee_last_name,
+              e.email as employee_email, e.wallet_address as employee_wallet_address
+       FROM payroll_items pi
+       JOIN employees e ON pi.employee_id = e.id
+       WHERE pi.tx_hash = $1
+       LIMIT 1`,
+      [txHash]
+    );
+    return result.rows[0] || null;
+  }
+
   static async updatePayrollRunTotals(payrollRunId: number): Promise<void> {
     const result = await pool.query(
       `SELECT 

@@ -20,13 +20,43 @@ export class EmployeeService {
       status,
       base_salary,
       base_currency,
+      phone,
+      address_line1,
+      address_line2,
+      city,
+      state_province,
+      postal_code,
+      country,
+      job_title,
+      hire_date,
+      date_of_birth,
+      emergency_contact_name,
+      emergency_contact_phone,
+      withdrawal_preference,
+      bank_name,
+      bank_account_number,
+      bank_routing_number,
+      mobile_money_provider,
+      mobile_money_account,
+      notes,
     } = data;
 
     const query = `
       INSERT INTO employees (
-        organization_id, first_name, last_name, email, wallet_address, position, department, status, base_salary, base_currency
+        organization_id, first_name, last_name, email, wallet_address,
+        position, department, status, base_salary, base_currency,
+        phone, address_line1, address_line2, city, state_province,
+        postal_code, country, job_title, hire_date, date_of_birth,
+        emergency_contact_name, emergency_contact_phone,
+        withdrawal_preference, bank_name, bank_account_number,
+        bank_routing_number, mobile_money_provider, mobile_money_account,
+        notes
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+        $21, $22, $23, $24, $25, $26, $27, $28, $29
+      )
       RETURNING *;
     `;
 
@@ -41,6 +71,25 @@ export class EmployeeService {
       status || 'active',
       base_salary || 0,
       base_currency || 'USDC',
+      phone || null,
+      address_line1 || null,
+      address_line2 || null,
+      city || null,
+      state_province || null,
+      postal_code || null,
+      country || null,
+      job_title || null,
+      hire_date || null,
+      date_of_birth || null,
+      emergency_contact_name || null,
+      emergency_contact_phone || null,
+      withdrawal_preference || 'bank',
+      bank_name || null,
+      bank_account_number || null,
+      bank_routing_number || null,
+      mobile_money_provider || null,
+      mobile_money_account || null,
+      notes || null,
     ];
 
     const result = await executor.query(query, values);
@@ -93,12 +142,13 @@ export class EmployeeService {
     }
 
     if (search) {
-      // Use full-text search vector if possible, or ILIKE for simplicity
       query += ` AND (
         first_name ILIKE $${paramIndex} OR
         last_name ILIKE $${paramIndex} OR
         email ILIKE $${paramIndex} OR
-        position ILIKE $${paramIndex}
+        position ILIKE $${paramIndex} OR
+        job_title ILIKE $${paramIndex} OR
+        phone ILIKE $${paramIndex}
       )`;
       values.push(`%${search}%`);
       paramIndex++;

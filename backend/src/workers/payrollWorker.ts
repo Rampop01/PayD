@@ -3,7 +3,9 @@ import { redisConnection, PAYROLL_QUEUE_NAME } from '../config/queue.js';
 import { PayrollBonusService } from '../services/payrollBonusService.js';
 import { PayrollJobData } from '../services/payrollQueueService.js';
 import { StellarService } from '../services/stellarService.js';
+import { PayrollAuditService } from '../services/payrollAuditService.js';
 import { emitBulkUpdate } from '../services/socketService.js';
+import taxService from '../services/taxService.js';
 import logger from '../utils/logger.js';
 import { Keypair, Asset, Operation, TransactionBuilder } from '@stellar/stellar-sdk';
 
@@ -62,16 +64,47 @@ export const payrollWorker = new Worker<PayrollJobData>(
 
                 try {
                     // Build operations for this chunk
-                    const operations = chunk.map(item => {
+                    const operations = [];
+                    
+                    for (const item of chunk) {
                         if (!item.employee_wallet_address) {
                             throw new Error(`Employee ${item.employee_id} has no wallet address`);
                         }
-                        return Operation.payment({
-                            destination: item.employee_wallet_address,
-                            asset: asset,
-                            amount: item.amount,
-                        });
-                    });
+
+                        // Calculate and deduct taxes
+                        const taxResult = await taxService.calculateDeductions(
+                            payroll_run.organization_id,
+                            parseFloat(item.amount)
+                        );
+
+                        // If there are deductions, we record them and use the net amount for payment
+                        if (taxResult.total_tax > 0) {
+                            logger.info(`Applying tax deductions for employee ${item.employee_id}: Gross ${taxResult.gross_amount}, Tax ${taxResult.total_tax}, Net ${taxResult.net_amount}`);
+                            
+                            // Record each deduction for reporting
+                            for (const deduction of taxResult.deductions) {
+                                await taxService.recordDeduction(
+                                    payroll_run.organization_id,
+                                    item.employee_id,
+                                    null, // transactionId will be updated later if needed
+                                    deduction.rule_id,
+                                    taxResult.gross_amount,
+                                    deduction.deducted_amount,
+                                    taxResult.net_amount,
+                                    payroll_run.period_start.toISOString(),
+                                    payroll_run.period_end.toISOString()
+                                );
+                            }
+                        }
+
+                        operations.push(
+                            Operation.payment({
+                                destination: item.employee_wallet_address,
+                                asset: asset,
+                                amount: taxResult.net_amount.toString(),
+                            })
+                        );
+                    }
 
                     // Build and submit transaction
                     const server = StellarService.getServer();
@@ -92,9 +125,23 @@ export const payrollWorker = new Worker<PayrollJobData>(
                     const result = await StellarService.submitTransaction(tx);
                     logger.info(`Chunk ${i + 1} submitted successfully. Tx Hash: ${result.hash}`);
 
-                    // Update database for items in this chunk
+                    // Update database for items in this chunk and log audit entries
                     for (const item of chunk) {
                         await PayrollBonusService.updateItemStatus(item.id, 'completed', result.hash);
+                        
+                        // Log successful transaction with item type
+                        await PayrollAuditService.logTransactionSucceeded(
+                            payroll_run.organization_id,
+                            payrollRunId,
+                            item.id,
+                            item.employee_id,
+                            result.hash,
+                            result.ledger || 0,
+                            item.amount,
+                            assetCode,
+                            item.item_type
+                        );
+                        
                         completedCount++;
                     }
 
@@ -110,9 +157,22 @@ export const payrollWorker = new Worker<PayrollJobData>(
                 } catch (chunkError: any) {
                     logger.error(`Failed to process chunk ${i + 1} for run ${payrollRunId}`, chunkError);
 
-                    // Mark items in this chunk as failed
+                    // Mark items in this chunk as failed and log audit entries
                     for (const item of chunk) {
                         await PayrollBonusService.updateItemStatus(item.id, 'failed');
+                        
+                        // Log failed transaction with item type
+                        await PayrollAuditService.logTransactionFailed(
+                            payroll_run.organization_id,
+                            payrollRunId,
+                            item.id,
+                            item.employee_id,
+                            'N/A',
+                            chunkError.message || 'Unknown error',
+                            item.amount,
+                            assetCode,
+                            item.item_type
+                        );
                     }
 
                     // We continue with other chunks instead of failing the whole job immediately,

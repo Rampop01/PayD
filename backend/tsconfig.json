@@ -23,7 +23,7 @@
     "noUncheckedIndexedAccess": true,
     "jsx": "react-jsx",
     "verbatimModuleSyntax": false,
-    "isolatedModules": false
+    "isolatedModules": true
   },
   "include": [
     "src/**/*"

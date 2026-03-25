@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import {
   Code,
@@ -14,15 +14,27 @@ import {
   PieChart,
 } from 'lucide-react';
 import { Avatar } from './Avatar';
+import { AvatarUpload } from './AvatarUpload';
+import { useWallet } from '../hooks/useWallet';
 
 const AppNav: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isProfileEditorOpen, setIsProfileEditorOpen] = useState(false);
+  const [userImageUrl, setUserImageUrl] = useState<string | undefined>(undefined);
+  const { address, walletName, isConnecting } = useWallet();
+
+  useEffect(() => {
+    const savedImage = localStorage.getItem('payd:user-avatar');
+    if (savedImage) {
+      setUserImageUrl(savedImage);
+    }
+  }, []);
 
   // Mock user data - replace with actual user context
   const currentUser = {
     email: 'user@example.com',
     name: 'John Doe',
-    imageUrl: undefined,
+    imageUrl: userImageUrl,
   };
 
   const navLinks = (
@@ -202,7 +214,24 @@ const AppNav: React.FC = () => {
 
         {/* User profile */}
         <div className="ml-auto flex items-center gap-2">
-          <div className="p-1 bg-gray-50 rounded-lg flex items-center gap-2">
+          <div className="hidden xl:flex flex-col items-end rounded-lg border border-(--border-hi) bg-(--surface) px-3 py-1.5">
+            <span className="text-[9px] uppercase tracking-wider text-(--muted)">
+              {isConnecting
+                ? 'Connecting wallet'
+                : walletName
+                  ? `${walletName} connected`
+                  : 'Wallet'}
+            </span>
+            <span className="text-[11px] font-mono text-(--accent)">
+              {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Not connected'}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="p-1 rounded-lg flex items-center gap-2 cursor-pointer border border-(--border-hi) bg-(--surface) hover:bg-(--surface-hi) transition"
+            onClick={() => setIsProfileEditorOpen(true)}
+            title="Edit profile photo"
+          >
             <Avatar
               email={currentUser.email}
               name={currentUser.name}
@@ -210,10 +239,10 @@ const AppNav: React.FC = () => {
               size="sm"
             />
             <div className="hidden md:block flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-gray-800 truncate">{currentUser.name}</p>
-              <p className="text-[10px] text-gray-500 truncate">{currentUser.email}</p>
+              <p className="text-[10px] font-semibold text-(--text) truncate">{currentUser.name}</p>
+              <p className="text-[10px] text-(--muted) truncate">{currentUser.email}</p>
             </div>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -221,6 +250,44 @@ const AppNav: React.FC = () => {
       {mobileOpen && (
         <div className="lg:hidden absolute left-0 right-0 top-full z-40 bg-white shadow-lg border-t">
           <div className="px-4 py-3 flex flex-col gap-2">{navLinks}</div>
+        </div>
+      )}
+
+      {isProfileEditorOpen && (
+        <div className="fixed inset-0 z-90 grid place-items-center bg-black/65 backdrop-blur-[2px] p-4">
+          <div className="w-full max-w-sm rounded-xl border border-(--border-hi) bg-(--surface) p-5 shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-(--text)">Profile Picture</h3>
+              <button
+                type="button"
+                className="rounded p-1 text-(--muted) hover:bg-(--surface-hi)"
+                onClick={() => setIsProfileEditorOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <AvatarUpload
+              email={currentUser.email}
+              name={currentUser.name}
+              currentImageUrl={currentUser.imageUrl}
+              label="Upload Profile Photo"
+              onImageUpload={(imageUrl) => {
+                setUserImageUrl(imageUrl);
+                localStorage.setItem('payd:user-avatar', imageUrl);
+                setIsProfileEditorOpen(false);
+              }}
+            />
+            <button
+              type="button"
+              className="mt-4 w-full rounded border border-(--border-hi) px-3 py-2 text-sm text-(--text) hover:bg-(--surface-hi) transition"
+              onClick={() => {
+                setUserImageUrl(undefined);
+                localStorage.removeItem('payd:user-avatar');
+              }}
+            >
+              Remove Custom Photo
+            </button>
+          </div>
         </div>
       )}
     </nav>

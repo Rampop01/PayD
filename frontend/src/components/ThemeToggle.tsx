@@ -1,19 +1,16 @@
-import React from 'react';
-import { Sun, Moon } from 'lucide-react';
-import { useTheme } from '../hooks/useTheme';
+import { Icon } from '@stellar/design-system';
+import { useTheme } from '../providers/ThemeProvider';
 
-const ThemeToggle: React.FC = () => {
+export const ThemeToggle = () => {
   const { theme, toggleTheme } = useTheme();
 
   return (
     <button
       onClick={toggleTheme}
-      aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-      className="p-2 rounded-lg border border-(--border-hi) text-(--muted) hover:text-(--text) hover:bg-(--surface-hi) transition-colors"
+      className="p-2 rounded-lg glass border-hi hover:bg-white/5 transition-all outline-none flex items-center justify-center text-text"
+      title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
     >
-      {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+      {theme === 'light' ? <Icon.Moon01 size="md" /> : <Icon.Sun size="md" />}
     </button>
   );
 };
-
-export default ThemeToggle;

@@ -31,6 +31,89 @@ interface PayrollFormState {
 }
 
 const formatDate = (dateString: string | undefined) => {
+type SchedulingFrequency = 'weekly' | 'biweekly' | 'monthly';
+
+interface EmployeePreference {
+  id: string;
+  name: string;
+  amount: string;
+  currency: string;
+}
+
+interface SchedulingConfig {
+  frequency: SchedulingFrequency;
+  dayOfWeek?: number;
+  dayOfMonth?: number;
+  timeOfDay: string; // HH:mm
+  preferences: EmployeePreference[];
+}
+
+function parseTimeOfDay(time: string) {
+  const [hhRaw, mmRaw] = time.split(':');
+  const hh = Number.parseInt(hhRaw ?? '0', 10);
+  const mm = Number.parseInt(mmRaw ?? '0', 10);
+  return {
+    hours: Number.isFinite(hh) ? hh : 0,
+    minutes: Number.isFinite(mm) ? mm : 0,
+  };
+}
+
+function clampDayOfMonth(year: number, monthIndex: number, desired: number) {
+  const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+  return Math.max(1, Math.min(desired, lastDay));
+}
+
+function computeNextRunDate(config: SchedulingConfig, from: Date = new Date()): Date {
+  const { hours, minutes } = parseTimeOfDay(config.timeOfDay);
+
+  if (config.frequency === 'monthly') {
+    const desiredDay = config.dayOfMonth || 1;
+
+    const year = from.getFullYear();
+    const monthIndex = from.getMonth();
+
+    let candidate = new Date(
+      year,
+      monthIndex,
+      clampDayOfMonth(year, monthIndex, desiredDay),
+      hours,
+      minutes,
+      0,
+      0
+    );
+
+    if (candidate.getTime() <= from.getTime()) {
+      const nextMonthIndex = monthIndex + 1;
+      candidate = new Date(
+        year,
+        nextMonthIndex,
+        clampDayOfMonth(year, nextMonthIndex, desiredDay),
+        hours,
+        minutes,
+        0,
+        0
+      );
+    }
+
+    return candidate;
+  }
+
+  // weekly / biweekly
+  const dayOfWeek = config.dayOfWeek ?? 1; // default Monday
+  const diffDays = (dayOfWeek - from.getDay() + 7) % 7;
+
+  const first = new Date(from);
+  first.setDate(from.getDate() + diffDays);
+  first.setHours(hours, minutes, 0, 0);
+
+  if (diffDays === 0 && first.getTime() <= from.getTime()) {
+    first.setDate(first.getDate() + 7);
+  }
+
+  return first;
+}
+
+const formatDate = (dateString: string) => {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return dateString;
@@ -72,6 +155,17 @@ export default function PayrollScheduler() {
   const [contractError, setContractError] = useState<ContractErrorDetail | null>(null);
 
   const organizationId = 1;
+  const { notifySuccess, notify, notifyPaymentSuccess, notifyPaymentFailure, notifyApiError } =
+    useNotification();
+  const { socket, subscribeToTransaction, unsubscribeFromTransaction } = useSocket();
+  const [formData, setFormData] = useState<PayrollFormState>(initialFormState);
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [activeSchedule, setActiveSchedule] = useState<SchedulingConfig | null>(null);
+  const [nextRunDate, setNextRunDate] = useState<Date | null>(null);
+  const [contractError, setContractError] = useState<ContractErrorDetail | null>(null);
+
+  const scheduleStorageKey = 'payd-scheduler-config';
 
   const [pendingClaims, setPendingClaims] = useState<PendingClaim[]>(() => {
     const saved = localStorage.getItem('pending-claims');
@@ -140,6 +234,39 @@ export default function PayrollScheduler() {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       notifyError('Failed to cancel schedule', errorMessage);
     }
+  // Restore confirmed schedule (persisted locally after wizard confirmation).
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(scheduleStorageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as SchedulingConfig;
+
+      if (!parsed?.frequency || !parsed?.timeOfDay) return;
+      if (!['weekly', 'biweekly', 'monthly'].includes(parsed.frequency)) return;
+      if (!Array.isArray(parsed.preferences)) return;
+
+      const next = computeNextRunDate(parsed, new Date());
+      setActiveSchedule(parsed);
+      setNextRunDate(next);
+    } catch {
+      // Ignore invalid local storage payloads.
+    }
+  }, []);
+
+  const handleScheduleComplete = (config: SchedulingConfig) => {
+    // SchedulingWizard calls back with the full SchedulingConfig, but the current type in
+    // this file is intentionally loose to avoid coupling to the component's internal type.
+    setActiveSchedule(config);
+    setIsWizardOpen(false);
+    notifySuccess(
+      'Payroll schedule configured!',
+      `Frequency: ${config.frequency}, time: ${config.timeOfDay}`
+    );
+
+    // Persist config so the countdown survives refresh.
+    localStorage.setItem(scheduleStorageKey, JSON.stringify(config));
+
+    setNextRunDate(computeNextRunDate(config, new Date()));
   };
 
   const handleChange = (
@@ -152,6 +279,29 @@ export default function PayrollScheduler() {
       setContractError(null);
     }
   };
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleTransactionUpdate = (data: { transactionId: string; status: string }) => {
+      console.log('Received transaction update:', data);
+      setPendingClaims((prev) =>
+        prev.map((claim) =>
+          claim.id === data.transactionId ? { ...claim, status: data.status } : claim
+        )
+      );
+
+      if (data.status === 'confirmed') {
+        notifyPaymentSuccess(data.transactionId, 'Payment confirmed!');
+      }
+    };
+
+    socket.on('transaction:update', handleTransactionUpdate);
+
+    return () => {
+      socket.off('transaction:update', handleTransactionUpdate);
+    };
+  }, [socket, notifyPaymentSuccess]);
 
   const handleInitialize = async () => {
     if (!formData.amount || isNaN(Number(formData.amount))) {
@@ -195,6 +345,68 @@ export default function PayrollScheduler() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       notifySuccess('Transaction Broadcasted', 'Payroll distribution initiated successfully.');
+      const mockRecipientPublicKey = generateWallet().publicKey;
+
+      // Integrate claimable balance logic from Issue #44
+      const result = createClaimableBalanceTransaction(
+        MOCK_EMPLOYER_SECRET,
+        mockRecipientPublicKey,
+        String(formData.amount),
+        'USDC'
+      );
+
+      if (!result.success) {
+        throw new Error('Failed to create claimable balance');
+      }
+
+      // Simulate a brief delay for network broadcast
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Add to pending claims
+      const newClaim: PendingClaim = {
+        id: Math.random().toString(36).substr(2, 9),
+        employeeName: formData.employeeName,
+        amount: formData.amount,
+        dateScheduled: formData.startDate || new Date().toISOString().split('T')[0],
+        claimantPublicKey: mockRecipientPublicKey,
+        status: 'Pending Claim',
+      };
+
+      const updatedClaims = [...pendingClaims, newClaim];
+      setPendingClaims(updatedClaims);
+      localStorage.setItem('pending-claims', JSON.stringify(updatedClaims));
+
+      // Subscribe to updates for this new claim
+      subscribeToTransaction(newClaim.id);
+
+      notifySuccess(
+        'Broadcast successful!',
+        `Claimable balance created for ${formData.employeeName}`
+      );
+
+      // Trigger Webhook Event (Internal simulation)
+      try {
+        await fetch('http://localhost:3001/api/webhooks/test-trigger', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'payment.completed',
+            payload: {
+              id: newClaim.id,
+              employeeName: newClaim.employeeName,
+              amount: newClaim.amount,
+              status: 'created',
+            },
+          }),
+        });
+      } catch {
+        notifyApiError(
+          'Webhook trigger failed',
+          'Payment was created, but webhook test trigger failed.'
+        );
+        console.warn('Webhook test-trigger skipped (Backend might not be running)');
+      }
+
       resetSimulation();
       setFormData(initialFormState);
     } catch (err) {
@@ -204,6 +416,7 @@ export default function PayrollScheduler() {
         err instanceof Error ? err.message : 'Broadcast failed'
       );
       setContractError(parsed);
+      notifyPaymentFailure(parsed.message);
     } finally {
       setIsBroadcasting(false);
     }

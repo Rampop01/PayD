@@ -1958,6 +1958,34 @@
         }
       }
     },
+    "/api/v1/payroll-bonus/runs/{id}/execute": {
+      "post": {
+        "summary": "Execute a payroll bonus run (asynchronous)",
+        "tags": [
+          "Payroll Bonus"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
     "/api/v1/payroll-bonus/items/bonus": {
       "post": {
         "summary": "Add a single bonus item",

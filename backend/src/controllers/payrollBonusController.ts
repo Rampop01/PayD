@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PayrollBonusService } from '../services/payrollBonusService.js';
+import { PayrollAuditService } from '../services/payrollAuditService.js';
 import logger from '../utils/logger.js';
 
 export class PayrollBonusController {
@@ -97,11 +98,19 @@ export class PayrollBonusController {
   static async addBonusItem(req: Request, res: Response): Promise<void> {
     try {
       const { payrollRunId, employeeId, amount, description } = req.body;
+      const organizationId = req.user?.organizationId;
 
       if (!payrollRunId || !employeeId || !amount) {
         res.status(400).json({
           error: 'Missing required fields: payrollRunId, employeeId, amount',
         });
+        return;
+      }
+
+      // Verify payroll run belongs to organization
+      const run = await PayrollBonusService.getPayrollRunById(payrollRunId);
+      if (!run || run.organization_id !== organizationId) {
+        res.status(404).json({ error: 'Payroll run not found' });
         return;
       }
 
@@ -111,6 +120,23 @@ export class PayrollBonusController {
         amount,
         description,
       });
+
+      // Log audit entry for bonus item addition
+      await PayrollAuditService.logItemAdded(
+        organizationId!,
+        payrollRunId,
+        item.id,
+        employeeId,
+        amount,
+        run.asset_code,
+        { type: 'user', id: req.user?.id?.toString(), email: req.user?.email },
+        {
+          ipAddress: req.ip,
+          userAgent: req.get('user-agent'),
+          itemType: 'bonus',
+          description,
+        }
+      );
 
       res.status(201).json({
         success: true,
@@ -128,6 +154,7 @@ export class PayrollBonusController {
   static async addBatchBonusItems(req: Request, res: Response): Promise<void> {
     try {
       const { payrollRunId, items } = req.body;
+      const organizationId = req.user?.organizationId;
 
       if (!payrollRunId || !items || !Array.isArray(items) || items.length === 0) {
         res.status(400).json({
@@ -145,6 +172,13 @@ export class PayrollBonusController {
         }
       }
 
+      // Verify payroll run belongs to organization
+      const run = await PayrollBonusService.getPayrollRunById(payrollRunId);
+      if (!run || run.organization_id !== organizationId) {
+        res.status(404).json({ error: 'Payroll run not found' });
+        return;
+      }
+
       const formattedItems = items.map((item) => ({
         employee_id: item.employeeId,
         amount: item.amount,
@@ -155,6 +189,28 @@ export class PayrollBonusController {
         payrollRunId,
         formattedItems
       );
+
+      // Log audit entries for each bonus item
+      for (let i = 0; i < insertedItems.length; i++) {
+        const item = insertedItems[i]!;
+        const originalItem = items[i]!;
+        
+        await PayrollAuditService.logItemAdded(
+          organizationId!,
+          payrollRunId,
+          item.id,
+          item.employee_id,
+          item.amount,
+          run.asset_code,
+          { type: 'user', id: req.user?.id?.toString(), email: req.user?.email },
+          {
+            ipAddress: req.ip,
+            userAgent: req.get('user-agent'),
+            itemType: 'bonus',
+            description: originalItem.description,
+          }
+        );
+      }
 
       res.status(201).json({
         success: true,

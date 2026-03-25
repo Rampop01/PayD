@@ -3,6 +3,7 @@ import { createReadStream } from 'fs';
 import fs from 'fs/promises';
 import { Pool } from 'pg';
 import { ExportService } from '../services/exportService.js';
+import { PayrollBonusService } from '../services/payrollBonusService.js';
 import { payrollQueryService } from '../services/payroll-query.service.js';
 import { exportJobService } from '../services/exportJobService.js';
 import { createExportDownloadToken } from '../utils/exportDownloadToken.js';
@@ -31,13 +32,23 @@ export class ExportController {
         return;
       }
 
+      // Fetch item_type and description from database if available
+      const payrollItem = await PayrollBonusService.getPayrollItemByTxHash(txHash as string);
+      
+      // Enrich transaction with item type and description
+      const enrichedTransaction = {
+        ...transaction,
+        itemType: payrollItem?.item_type,
+        description: payrollItem?.description,
+      };
+
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader(
         'Content-Disposition',
         `attachment; filename="receipt-${(txHash as string).substring(0, 8)}.pdf"`
       );
 
-      await ExportService.generateReceiptPdf(transaction, res);
+      await ExportService.generateReceiptPdf(enrichedTransaction, res);
     } catch (error) {
       logger.error('Failed to generate PDF receipt', { error });
 

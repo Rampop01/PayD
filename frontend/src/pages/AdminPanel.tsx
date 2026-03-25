@@ -74,7 +74,7 @@ const TAB_LABELS: Record<ActiveTab, string> = {
 };
 
 export default function AdminPanel() {
-  const { notifySuccess, notifyError } = useNotification();
+  const { notifySuccess, notifyError, notifyApiError } = useNotification();
   const { address: adminAddress } = useWallet();
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('account');
@@ -126,7 +126,7 @@ export default function AdminPanel() {
         setLogsTotal(data.total);
       }
     } catch {
-      notifyError('Fetch Error', 'Failed to load audit logs.');
+      notifyApiError('Fetch Error', 'Failed to load audit logs.');
     } finally {
       setLogsLoading(false);
     }
@@ -159,7 +159,7 @@ export default function AdminPanel() {
       setAccountSecret('');
       setAccountReason('');
     } catch (err: unknown) {
-      notifyError('Action Failed', err instanceof Error ? err.message : 'Action failed');
+      notifyApiError('Action Failed', err instanceof Error ? err.message : 'Action failed');
     } finally {
       setAccountLoading(false);
     }
@@ -187,7 +187,7 @@ export default function AdminPanel() {
       setGlobalSecret('');
       setGlobalReason('');
     } catch (err: unknown) {
-      notifyError('Action Failed', err instanceof Error ? err.message : 'Action failed');
+      notifyApiError('Action Failed', err instanceof Error ? err.message : 'Action failed');
     } finally {
       setGlobalLoading(false);
     }
@@ -212,7 +212,7 @@ export default function AdminPanel() {
       if (!res.ok) throw new Error(data.error ?? 'Status check failed');
       setStatusResult(data);
     } catch (err: unknown) {
-      notifyError(
+      notifyApiError(
         'Status Check Failed',
         err instanceof Error ? err.message : 'Status check failed'
       );

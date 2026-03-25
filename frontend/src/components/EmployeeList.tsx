@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Avatar } from './Avatar';
+import { AvatarUpload } from './AvatarUpload';
 import { CSVUploader } from './CSVUploader';
 import type { CSVRow } from './CSVUploader';
 import { Pencil, Trash2 } from 'lucide-react';
@@ -21,6 +22,7 @@ interface EmployeeListProps {
   onAddEmployee: (employee: Employee) => void;
   onEditEmployee?: (employee: Employee) => void;
   onRemoveEmployee?: (id: string) => void;
+  onUpdateEmployeeImage?: (id: string, imageUrl: string) => void;
 }
 
 export const EmployeeList: React.FC<EmployeeListProps> = ({
@@ -28,6 +30,7 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
   onAddEmployee,
   onEditEmployee,
   onRemoveEmployee,
+  onUpdateEmployeeImage,
 }) => {
   const [csvData, setCsvData] = useState<Employee[]>([]);
   const [showCSVUploader, setShowCSVUploader] = useState(false);
@@ -38,6 +41,10 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<{ open: boolean; id?: string }>({
     open: false,
   });
+  const [showAvatarModal, setShowAvatarModal] = useState<{
+    open: boolean;
+    employee?: Employee;
+  }>({ open: false });
   const [sortKey, setSortKey] = useState<keyof Employee>('name');
   const [sortAsc, setSortAsc] = useState(true);
 
@@ -195,7 +202,16 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
                       imageUrl={employee.imageUrl}
                       size="sm"
                     />
-                    <span className="text-xs text-muted">{employee.name}</span>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted">{employee.name}</span>
+                      <button
+                        type="button"
+                        className="text-[10px] text-blue-500 hover:underline text-left"
+                        onClick={() => setShowAvatarModal({ open: true, employee })}
+                      >
+                        Update photo
+                      </button>
+                    </div>
                   </div>
                 </td>
                 <td className="p-6 text-sm font-medium">{employee.position}</td>
@@ -416,6 +432,35 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
                 Remove
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showAvatarModal.open && showAvatarModal.employee && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-lg bg-white p-6">
+            <h2 className="mb-4 text-lg font-bold">Update Employee Photo</h2>
+            <AvatarUpload
+              email={showAvatarModal.employee.email}
+              name={showAvatarModal.employee.name}
+              currentImageUrl={showAvatarModal.employee.imageUrl}
+              label="Upload Employee Photo"
+              onImageUpload={(imageUrl) => {
+                if (onUpdateEmployeeImage) {
+                  onUpdateEmployeeImage(showAvatarModal.employee!.id, imageUrl);
+                } else if (onEditEmployee) {
+                  onEditEmployee({ ...showAvatarModal.employee!, imageUrl });
+                }
+                setShowAvatarModal({ open: false });
+              }}
+            />
+            <button
+              type="button"
+              className="mt-4 w-full rounded bg-gray-200 px-3 py-2 text-sm text-gray-700"
+              onClick={() => setShowAvatarModal({ open: false })}
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
