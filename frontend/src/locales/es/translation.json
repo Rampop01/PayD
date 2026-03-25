@@ -122,7 +122,11 @@
     "employeesTitle": "Error al cargar el directorio de empleados",
     "employeesDescription": "Vuelve al panel principal o inténtalo de nuevo en unos segundos.",
     "debuggerTitle": "El depurador se bloqueó",
-    "debuggerDescription": "Reinicia el depurador o vuelve al panel principal."
+    "debuggerDescription": "Reinicia el depurador o vuelve al panel principal.",
+    "pageErrorTitle": "Error de aplicación",
+    "pageErrorDescription": "Algo salió mal con la aplicación. Nuestro equipo ha sido notificado. Por favor intenta recargar la página o regresa a la pantalla principal.",
+    "componentErrorTitle": "Error de componente",
+    "componentErrorDescription": "Esta sección encontró un error. Puedes intentar de nuevo o recargar la página."
   },
   "connectAccount": {
     "authenticated": "Autenticado",

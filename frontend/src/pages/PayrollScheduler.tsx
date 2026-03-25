@@ -21,6 +21,7 @@ import { BulkPaymentStatusTracker } from '../components/BulkPaymentStatusTracker
 
 import { ContractErrorPanel } from '../components/ContractErrorPanel';
 import { parseContractError, type ContractErrorDetail } from '../utils/contractErrorParser';
+import { HelpLink } from '../components/HelpLink';
 
 interface PayrollFormState {
   employeeName: string;
@@ -241,9 +242,15 @@ export default function PayrollScheduler() {
     <div className="flex-1 flex flex-col items-center justify-start p-12 max-w-6xl mx-auto w-full">
       <div className="w-full mb-12 flex items-end justify-between border-b border-hi pb-8">
         <div>
-          <Heading as="h1" size="lg" weight="bold" addlClassName="mb-2 tracking-tight">
+          <Heading
+            as="h1"
+            size="lg"
+            weight="bold"
+            addlClassName="mb-2 tracking-tight flex items-center gap-3"
+          >
             {t('payroll.title', 'Workforce')}{' '}
             <span className="text-accent">{t('payroll.titleHighlight', 'Scheduler')}</span>
+            <HelpLink topic="schedule payroll" variant="icon" size="sm" />
           </Heading>
           <Text
             as="p"
@@ -457,6 +464,7 @@ export default function PayrollScheduler() {
                   <line x1="12" y1="8" x2="12.01" y2="8" />
                 </svg>
                 Pre-flight Validation
+                <HelpLink topic="transaction simulation" variant="icon" size="sm" />
               </Heading>
               <Text
                 as="p"

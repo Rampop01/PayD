@@ -51,7 +51,7 @@ jobs:
           fi
       - name: Ensure Stellar DB is initialized
         run: |
-          stellar --initialize-db || true
+          stellar db init || true
       - name: Wait for Stellar Quickstart health
         run: |
           echo "Waiting for Stellar RPC..."

@@ -16,7 +16,7 @@ const TEMPORARY_TTL_THRESHOLD: u32 = 2_000;
 const TEMPORARY_TTL_EXTEND_TO: u32 = 20_000;
 
 #[contracttype]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct PaymentRecord {
     pub from: Address,
     pub amount: i128,
@@ -32,6 +32,23 @@ pub struct CrossAssetPaymentContract;
 
 #[contractimpl]
 impl CrossAssetPaymentContract {
+    // ── SEP-0034 Contract Metadata (Issue #263) ───────────────────────────
+
+    /// Returns the human-readable contract name (SEP-0034).
+    pub fn name(env: Env) -> String {
+        String::from_str(&env, "PayD Cross-Asset Payment")
+    }
+
+    /// Returns the contract version string (SEP-0034).
+    pub fn version(env: Env) -> String {
+        String::from_str(&env, "0.0.1")
+    }
+
+    /// Returns the contract author / organization (SEP-0034).
+    pub fn author(env: Env) -> String {
+        String::from_str(&env, "The Aha Company")
+    }
+
     /// Initialize the contract with an admin.
     pub fn init(env: Env, admin: Address) {
         if env.storage().persistent().has(&DataKey::Admin) {

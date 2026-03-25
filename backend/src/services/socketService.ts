@@ -30,9 +30,35 @@ export const initializeSocket = (httpServer: HttpServer) => {
       console.log(`Client ${socket.id} unsubscribed from transaction ${transactionId}`);
       socket.leave(`transaction:${transactionId}`);
     });
+
+    // Handle subscription to bulk payroll batch updates
+    socket.on('subscribe:bulk', ({ batchId }: { batchId: string }) => {
+      console.log(`Client ${socket.id} subscribed to bulk batch ${batchId}`);
+      socket.join(`bulk:${batchId}`);
+    });
+
+    socket.on('unsubscribe:bulk', ({ batchId }: { batchId: string }) => {
+      console.log(`Client ${socket.id} unsubscribed from bulk batch ${batchId}`);
+      socket.leave(`bulk:${batchId}`);
+    });
   });
 
   return io;
+};
+
+// Helper to emit bulk payroll updates
+export const emitBulkUpdate = (batchId: string, status: string, data?: any) => {
+  try {
+    const ioInstance = getIO();
+    ioInstance.to(`bulk:${batchId}`).emit('bulk:confirmation', {
+      batchId,
+      status,
+      timestamp: new Date().toISOString(),
+      ...data,
+    });
+  } catch (error) {
+    console.warn('Failed to emit bulk update (Socket.IO might not be initialized yet)');
+  }
 };
 
 export const getIO = (): SocketIOServer => {

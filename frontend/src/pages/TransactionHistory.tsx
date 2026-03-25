@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Activity, Calendar, Filter, Search } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
   fetchHistoryPage,
   type HistoryFilters,
@@ -120,13 +121,21 @@ export default function TransactionHistory() {
             Unified classic + contract event timeline
           </p>
         </div>
-        <button
-          onClick={() => setShowFilters((prev) => !prev)}
-          className="px-4 py-2 rounded-lg font-bold flex items-center gap-2 bg-zinc-800/50 text-white hover:bg-zinc-800 transition-all"
-        >
-          <Filter size={18} />
-          Filters {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/help?q=failed+transaction"
+            className="text-xs text-zinc-500 hover:text-accent underline transition"
+          >
+            Troubleshoot
+          </Link>
+          <button
+            onClick={() => setShowFilters((prev) => !prev)}
+            className="px-4 py-2 rounded-lg font-bold flex items-center gap-2 bg-zinc-800/50 text-white hover:bg-zinc-800 transition-all"
+          >
+            <Filter size={18} />
+            Filters {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
+          </button>
+        </div>
       </div>
 
       {showFilters && (

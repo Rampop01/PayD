@@ -1,6 +1,6 @@
 #![no_std]
 
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, Vec, token};
+use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, String, Vec, token};
 
 #[cfg(test)]
 mod test;
@@ -28,6 +28,23 @@ pub struct RevenueSplitContract;
 
 #[contractimpl]
 impl RevenueSplitContract {
+    // ── SEP-0034 Contract Metadata (Issue #263) ───────────────────────────
+
+    /// Returns the human-readable contract name (SEP-0034).
+    pub fn name(env: Env) -> String {
+        String::from_str(&env, "PayD Revenue Split")
+    }
+
+    /// Returns the contract version string (SEP-0034).
+    pub fn version(env: Env) -> String {
+        String::from_str(&env, "0.0.1")
+    }
+
+    /// Returns the contract author / organization (SEP-0034).
+    pub fn author(env: Env) -> String {
+        String::from_str(&env, "The Aha Company")
+    }
+
     /// Initialize the contract with an admin and an initial set of recipients/shares.
     pub fn init(env: Env, admin: Address, shares: Vec<RecipientShare>) {
         if env.storage().persistent().has(&DataKey::Admin) {

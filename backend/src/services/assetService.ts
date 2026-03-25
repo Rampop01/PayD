@@ -108,6 +108,15 @@ export class AssetService {
 
     transaction.sign(issuerKeypair);
 
+    const simulation = await StellarService.simulateTransaction(transaction);
+    if (!simulation.success) {
+      throw new Error(
+        `Transaction simulation failed: ${simulation.errorMessage}. ` +
+          `This clawback operation would likely fail on-chain. ` +
+          `Please verify: 1) The account holds ORGUSD, 2) The issuer has CLawbackEnabled flag set.`
+      );
+    }
+
     try {
       const result = await server.submitTransaction(transaction);
 
@@ -152,6 +161,15 @@ export class AssetService {
       .build();
 
     transaction.sign(issuerKeypair);
+
+    const simulation = await StellarService.simulateTransaction(transaction);
+    if (!simulation.success) {
+      throw new Error(
+        `Transaction simulation failed: ${simulation.errorMessage}. ` +
+          `This clawback operation would likely fail on-chain. ` +
+          `Please verify the claimable balance exists and is not already claimed.`
+      );
+    }
 
     try {
       const result = await server.submitTransaction(transaction);

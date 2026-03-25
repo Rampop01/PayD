@@ -177,7 +177,7 @@ const AppNav: React.FC = () => {
       <Link
         to="/help"
         onClick={() => setMobileOpen(false)}
-        className="text-blue-500 text-xs underline"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold transition text-(--accent) hover:bg-(--accent)/10"
       >
         Help
       </Link>

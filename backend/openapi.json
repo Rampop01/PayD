@@ -1,0 +1,2548 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "PayD Backend API",
+    "version": "1.0.0",
+    "description": "API Documentation for PayD Backend"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000",
+      "description": "Development server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/assets/issue": {
+      "post": {
+        "summary": "Issue organization USD",
+        "tags": [
+          "Assets"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/assets/clawback": {
+      "post": {
+        "summary": "Clawback assets",
+        "tags": [
+          "Assets"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/audit": {
+      "get": {
+        "summary": "List audit records with pagination",
+        "tags": [
+          "Audit"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/audit/{txHash}": {
+      "get": {
+        "summary": "Get a stored audit record by transaction hash",
+        "tags": [
+          "Audit"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "txHash",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create an audit record for a transaction",
+        "tags": [
+          "Audit"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "txHash",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      }
+    },
+    "/api/audit/{txHash}/verify": {
+      "get": {
+        "summary": "Verify integrity of a stored audit record",
+        "tags": [
+          "Audit"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "txHash",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/auth/google": {
+      "get": {
+        "summary": "Initiate Google OAuth login",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to Google authentication page"
+          }
+        }
+      }
+    },
+    "/auth/google/callback": {
+      "get": {
+        "summary": "Google OAuth callback",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to frontend dashboard with JWT token"
+          }
+        }
+      }
+    },
+    "/auth/github": {
+      "get": {
+        "summary": "Initiate GitHub OAuth login",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to GitHub authentication page"
+          }
+        }
+      }
+    },
+    "/auth/github/callback": {
+      "get": {
+        "summary": "GitHub OAuth callback",
+        "tags": [
+          "Auth"
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to frontend dashboard with JWT token"
+          }
+        }
+      }
+    },
+    "/api/balance/{accountId}": {
+      "get": {
+        "summary": "Query balance for a Stellar account",
+        "tags": [
+          "Balance"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "accountId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "assetIssuer",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/balance/preflight": {
+      "post": {
+        "summary": "Run preflight balance check before payroll execution",
+        "tags": [
+          "Balance"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "distributionAccount": {
+                    "type": "string"
+                  },
+                  "assetIssuer": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/events/{contractId}": {
+      "get": {
+        "summary": "List indexed contract events",
+        "tags": [
+          "Contract Events"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "contractId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "eventType",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/contracts": {
+      "get": {
+        "summary": "Returns all deployed contract addresses with metadata",
+        "tags": [
+          "Contract Registry"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/contracts": {
+      "get": {
+        "summary": "List all registered contracts",
+        "tags": [
+          "Contract Upgrades"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/contracts/{registryId}": {
+      "get": {
+        "summary": "Single contract detail",
+        "tags": [
+          "Contract Upgrades"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "registryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/contracts/{registryId}/validate-hash": {
+      "post": {
+        "summary": "Validates WASM hash format and on-chain existence",
+        "tags": [
+          "Contract Upgrades"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "registryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "newWasmHash": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/contracts/{registryId}/simulate-upgrade": {
+      "post": {
+        "summary": "Pre-flights the upgrade via Soroban RPC",
+        "tags": [
+          "Contract Upgrades"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "registryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "newWasmHash": {
+                    "type": "string"
+                  },
+                  "initiatedBy": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/contracts/{registryId}/upgrade-logs": {
+      "get": {
+        "summary": "Paginated upgrade history for a specific contract",
+        "tags": [
+          "Contract Upgrades"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "registryId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/contracts/upgrade-logs/{logId}/execute": {
+      "post": {
+        "summary": "Executes a simulated upgrade on-chain",
+        "tags": [
+          "Contract Upgrades"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "logId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "adminSecret": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/contracts/upgrade-logs/{logId}/status": {
+      "get": {
+        "summary": "Polls migration step progress for an executing upgrade",
+        "tags": [
+          "Contract Upgrades"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "logId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/contracts/upgrade-logs/{logId}/cancel": {
+      "post": {
+        "summary": "Cancels a pending or simulated upgrade before execution",
+        "tags": [
+          "Contract Upgrades"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "logId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/employees": {
+      "post": {
+        "summary": "Create a new employee",
+        "tags": [
+          "Employees"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      },
+      "get": {
+        "summary": "Get all employees",
+        "tags": [
+          "Employees"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/employees/{id}": {
+      "get": {
+        "summary": "Get a single employee",
+        "tags": [
+          "Employees"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update an employee",
+        "tags": [
+          "Employees"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete an employee",
+        "tags": [
+          "Employees"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/employees/bulk-import": {
+      "post": {
+        "summary": "Bulk import employees from CSV",
+        "tags": [
+          "Employees"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/exports/receipt/{txHash}/pdf": {
+      "get": {
+        "summary": "Export transaction receipt as PDF",
+        "tags": [
+          "Exports"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "txHash",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PDF file"
+          }
+        }
+      }
+    },
+    "/api/v1/exports/payroll/{organizationPublicKey}/{batchId}/excel": {
+      "get": {
+        "summary": "Export payroll report as Excel",
+        "tags": [
+          "Exports"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organizationPublicKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "batchId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Excel file"
+          }
+        }
+      }
+    },
+    "/api/v1/exports/payroll/{organizationPublicKey}/{batchId}/csv": {
+      "get": {
+        "summary": "Export payroll report as CSV",
+        "tags": [
+          "Exports"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organizationPublicKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "batchId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV file"
+          }
+        }
+      }
+    },
+    "/api/v1/freeze/account/freeze": {
+      "post": {
+        "summary": "Freeze an account's trustline",
+        "tags": [
+          "Freeze"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "targetAccount": {
+                    "type": "string"
+                  },
+                  "assetCode": {
+                    "type": "string"
+                  },
+                  "assetIssuer": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/freeze/account/unfreeze": {
+      "post": {
+        "summary": "Unfreeze an account's trustline",
+        "tags": [
+          "Freeze"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "targetAccount": {
+                    "type": "string"
+                  },
+                  "assetCode": {
+                    "type": "string"
+                  },
+                  "assetIssuer": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/freeze/global/freeze": {
+      "post": {
+        "summary": "Pause transfers globally for an asset",
+        "tags": [
+          "Freeze"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "assetCode": {
+                    "type": "string"
+                  },
+                  "assetIssuer": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/freeze/global/unfreeze": {
+      "post": {
+        "summary": "Restore transfers globally for an asset",
+        "tags": [
+          "Freeze"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "assetCode": {
+                    "type": "string"
+                  },
+                  "assetIssuer": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/freeze/status/{targetAccount}": {
+      "get": {
+        "summary": "Query the active freeze status of an account",
+        "tags": [
+          "Freeze"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "targetAccount",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "assetCode",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "assetIssuer",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/freeze/logs": {
+      "get": {
+        "summary": "History of all freeze and unfreeze actions",
+        "tags": [
+          "Freeze"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "targetAccount",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "assetCode",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/multisig/configure": {
+      "post": {
+        "summary": "Full multi-sig setup for an account",
+        "tags": [
+          "Multi-sig"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/multisig/status/{publicKey}": {
+      "get": {
+        "summary": "Get current signers and thresholds",
+        "tags": [
+          "Multi-sig"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publicKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/multisig/signers": {
+      "post": {
+        "summary": "Add a signer to an account",
+        "tags": [
+          "Multi-sig"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/multisig/signers/{publicKey}": {
+      "delete": {
+        "summary": "Remove a signer from an account",
+        "tags": [
+          "Multi-sig"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publicKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/multisig/thresholds": {
+      "put": {
+        "summary": "Update account thresholds",
+        "tags": [
+          "Multi-sig"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/anchor-info": {
+      "get": {
+        "summary": "Get SEP-31 anchor configuration",
+        "tags": [
+          "Payments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/sep31/initiate": {
+      "post": {
+        "summary": "Initiate a SEP-31 cross-border payment",
+        "tags": [
+          "Payments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/sep31/status/{domain}/{id}": {
+      "get": {
+        "summary": "Query SEP-31 payment status",
+        "tags": [
+          "Payments"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "domain",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/payroll/transactions": {
+      "get": {
+        "summary": "Query payroll transactions with filtering and pagination",
+        "tags": [
+          "Payroll"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "orgPublicKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "employeeId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "batchId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "assetCode",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "assetIssuer",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sortOrder",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/payroll/employees/{employeeId}": {
+      "get": {
+        "summary": "Get payroll for a specific employee",
+        "tags": [
+          "Payroll"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "employeeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "orgPublicKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/payroll/employees/{employeeId}/summary": {
+      "get": {
+        "summary": "Get employee payroll summary",
+        "tags": [
+          "Payroll"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "employeeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "orgPublicKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/payroll/batches/{batchId}": {
+      "get": {
+        "summary": "Get payroll batch details",
+        "tags": [
+          "Payroll"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batchId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "orgPublicKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/payroll/aggregation": {
+      "get": {
+        "summary": "Get payroll aggregation statistics",
+        "tags": [
+          "Payroll"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "orgPublicKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "assetCode",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "assetIssuer",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/payroll/audit": {
+      "get": {
+        "summary": "Get organization-wide audit report",
+        "tags": [
+          "Payroll"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "orgPublicKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/payroll/search/memo": {
+      "get": {
+        "summary": "Search transactions by memo pattern",
+        "tags": [
+          "Payroll"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "orgPublicKey",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pattern",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/payroll/transactions/{txHash}": {
+      "get": {
+        "summary": "Get transaction details by hash",
+        "tags": [
+          "Payroll"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "txHash",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/payroll/status/rate-limit": {
+      "get": {
+        "summary": "Get SDS rate limit information",
+        "tags": [
+          "Payroll"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/payroll/status/health": {
+      "get": {
+        "summary": "Check SDS health status",
+        "tags": [
+          "Payroll"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/payroll/cache/clear": {
+      "post": {
+        "summary": "Clear cache (admin endpoint)",
+        "tags": [
+          "Payroll"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/payroll/cache/stats": {
+      "get": {
+        "summary": "Get cache statistics",
+        "tags": [
+          "Payroll"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/payroll/audit": {
+      "get": {
+        "summary": "List payroll audit logs",
+        "tags": [
+          "Payroll Audit"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "organizationId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/payroll/audit/export": {
+      "get": {
+        "summary": "Export audit logs as CSV",
+        "tags": [
+          "Payroll Audit"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV file"
+          }
+        }
+      }
+    },
+    "/api/v1/payroll/audit/summary": {
+      "get": {
+        "summary": "Get audit summary statistics",
+        "tags": [
+          "Payroll Audit"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/payroll/audit/payroll-run/{payrollRunId}": {
+      "get": {
+        "summary": "Get audit logs for a specific payroll run",
+        "tags": [
+          "Payroll Audit"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "payrollRunId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/payroll/audit/employee/{employeeId}": {
+      "get": {
+        "summary": "Get audit logs for a specific employee",
+        "tags": [
+          "Payroll Audit"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "employeeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/payroll/audit/{id}": {
+      "get": {
+        "summary": "Get specific audit log by ID",
+        "tags": [
+          "Payroll Audit"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/payroll-bonus/runs": {
+      "post": {
+        "summary": "Create a new payroll bonus run",
+        "tags": [
+          "Payroll Bonus"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      },
+      "get": {
+        "summary": "List all payroll bonus runs",
+        "tags": [
+          "Payroll Bonus"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/payroll-bonus/runs/{id}": {
+      "get": {
+        "summary": "Get details of a payroll bonus run",
+        "tags": [
+          "Payroll Bonus"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/payroll-bonus/runs/{id}/status": {
+      "patch": {
+        "summary": "Update status of a payroll bonus run",
+        "tags": [
+          "Payroll Bonus"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/payroll-bonus/items/bonus": {
+      "post": {
+        "summary": "Add a single bonus item",
+        "tags": [
+          "Payroll Bonus"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      }
+    },
+    "/api/v1/payroll-bonus/items/bonus/batch": {
+      "post": {
+        "summary": "Add multiple bonus items in batch",
+        "tags": [
+          "Payroll Bonus"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      }
+    },
+    "/api/v1/payroll-bonus/runs/{payrollRunId}/items": {
+      "get": {
+        "summary": "List all items in a payroll bonus run",
+        "tags": [
+          "Payroll Bonus"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "payrollRunId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/payroll-bonus/items/{itemId}": {
+      "delete": {
+        "summary": "Delete a payroll item",
+        "tags": [
+          "Payroll Bonus"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "itemId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/payroll-bonus/bonuses/history": {
+      "get": {
+        "summary": "Get history of all bonuses",
+        "tags": [
+          "Payroll Bonus"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/rate-limit/status": {
+      "get": {
+        "summary": "Get current rate limit status",
+        "tags": [
+          "Rate Limiting"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/rate-limit/tiers": {
+      "get": {
+        "summary": "List available rate limit tiers",
+        "tags": [
+          "Rate Limiting"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/search/organizations/{organizationId}/employees": {
+      "get": {
+        "summary": "Search and filter employees",
+        "tags": [
+          "Data Search"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organizationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/search/organizations/{organizationId}/transactions": {
+      "get": {
+        "summary": "Search and filter transactions",
+        "tags": [
+          "Data Search"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organizationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/taxes/rules": {
+      "post": {
+        "summary": "Create a new tax rule",
+        "tags": [
+          "Taxation"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          }
+        }
+      },
+      "get": {
+        "summary": "List all tax rules",
+        "tags": [
+          "Taxation"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/taxes/rules/{id}": {
+      "put": {
+        "summary": "Update a tax rule",
+        "tags": [
+          "Taxation"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a tax rule",
+        "tags": [
+          "Taxation"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/taxes/calculate": {
+      "post": {
+        "summary": "Calculate deductions for a payment",
+        "tags": [
+          "Taxation"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/taxes/reports": {
+      "get": {
+        "summary": "Get tax compliance reports",
+        "tags": [
+          "Taxation"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/throttling/status": {
+      "get": {
+        "summary": "Get current throttling status",
+        "tags": [
+          "Throttling"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/throttling/config": {
+      "get": {
+        "summary": "Get throttling configuration",
+        "tags": [
+          "Throttling"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update throttling configuration",
+        "tags": [
+          "Throttling"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/throttling/queue": {
+      "delete": {
+        "summary": "Clear the throttling queue",
+        "tags": [
+          "Throttling"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/throttling/metrics": {
+      "get": {
+        "summary": "Get throttling performance metrics",
+        "tags": [
+          "Throttling"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/trustline/check/{walletAddress}": {
+      "get": {
+        "summary": "Detect trustline status via Horizon",
+        "tags": [
+          "Trustlines"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "walletAddress",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "assetIssuer",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/trustline/employees/{employeeId}": {
+      "get": {
+        "summary": "Get stored trustline status for an employee",
+        "tags": [
+          "Trustlines"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "employeeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/trustline/employees/{employeeId}/refresh": {
+      "post": {
+        "summary": "Update trustline status in DB from Horizon",
+        "tags": [
+          "Trustlines"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "employeeId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "assetIssuer": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    },
+    "/api/v1/trustline/prompt": {
+      "post": {
+        "summary": "Build unsigned changeTrust XDR",
+        "tags": [
+          "Trustlines"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "employeeId": {
+                    "type": "integer"
+                  },
+                  "walletAddress": {
+                    "type": "string"
+                  },
+                  "assetIssuer": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Assets",
+      "description": "Asset management (ISSUE/CLAWBACK)"
+    },
+    {
+      "name": "Audit",
+      "description": "Transaction audit management"
+    },
+    {
+      "name": "Auth",
+      "description": "Authentication API endpoints"
+    },
+    {
+      "name": "Balance",
+      "description": "Stellar account balance and preflight checks"
+    },
+    {
+      "name": "Contract Events",
+      "description": "On-chain contract event indexing"
+    },
+    {
+      "name": "Contract Registry",
+      "description": "Deployed contract address registry"
+    },
+    {
+      "name": "Contract Upgrades",
+      "description": "On-chain contract upgrade lifecycle"
+    },
+    {
+      "name": "Employees",
+      "description": "Employee management"
+    },
+    {
+      "name": "Exports",
+      "description": "Export receipts and payroll reports"
+    },
+    {
+      "name": "Freeze",
+      "description": "Administrative asset freeze and unfreeze operations"
+    },
+    {
+      "name": "Multi-sig",
+      "description": "Account multi-signature configuration and management"
+    },
+    {
+      "name": "Payments",
+      "description": "Cross-border and cross-asset payments"
+    },
+    {
+      "name": "Payroll",
+      "description": "Payroll transaction querying and management"
+    },
+    {
+      "name": "Payroll Audit",
+      "description": "Detailed payroll-specific audit logs"
+    },
+    {
+      "name": "Payroll Bonus",
+      "description": "One-off bonus payment runs"
+    },
+    {
+      "name": "Rate Limiting",
+      "description": "API rate limit management"
+    },
+    {
+      "name": "Data Search",
+      "description": "Search and filter employees and transactions"
+    },
+    {
+      "name": "Taxation",
+      "description": "Tax rules and deduction management"
+    },
+    {
+      "name": "Throttling",
+      "description": "API request throttling and queuing"
+    },
+    {
+      "name": "Trustlines",
+      "description": "Stellar asset trustline management"
+    }
+  ]
+}

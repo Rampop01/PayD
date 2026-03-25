@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2, ArrowRightLeft, ShieldCheck, Info, CheckCircle2, Radio } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useNotification } from '../hooks/useNotification';
 import { useSocket } from '../hooks/useSocket';
 import { useWallet } from '../hooks/useWallet';
@@ -163,8 +164,11 @@ export default function CrossAssetPayment() {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
               Cross-Asset Payment Settlement
             </h1>
-            <p className="text-zinc-400 mt-2">
+            <p className="text-zinc-400 mt-2 flex items-center gap-2">
               Live pathfinding, Soroban simulation, and wallet-signed contract submission.
+              <Link to="/help?q=anchor" className="text-xs text-blue-400 hover:underline">
+                Learn about anchors
+              </Link>
             </p>
           </div>
           {!address ? (

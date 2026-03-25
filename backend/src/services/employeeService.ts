@@ -4,6 +4,7 @@ import {
   UpdateEmployeeInput,
   EmployeeQueryInput,
 } from '../schemas/employeeSchema.js';
+import { WebhookService, WEBHOOK_EVENTS } from './webhook.service.js';
 
 export class EmployeeService {
   async create(data: CreateEmployeeInput, dbClient?: any) {
@@ -43,7 +44,25 @@ export class EmployeeService {
     ];
 
     const result = await executor.query(query, values);
-    return result.rows[0];
+    const employee = result.rows[0];
+
+    EmployeeService.dispatchWebhook(organization_id, WEBHOOK_EVENTS.EMPLOYEE_ADDED, employee).catch(
+      (err: any) => console.error('Failed to dispatch employee.added webhook:', err)
+    );
+
+    return employee;
+  }
+
+  private static async dispatchWebhook(
+    organization_id: number,
+    eventType: string,
+    payload: any
+  ): Promise<void> {
+    try {
+      await WebhookService.dispatch(eventType, organization_id, payload);
+    } catch (error) {
+      console.error(`Webhook dispatch failed for ${eventType}:`, error);
+    }
   }
 
   async findAll(organization_id: number, params: EmployeeQueryInput) {
@@ -140,7 +159,17 @@ export class EmployeeService {
     `;
 
     const result = await pool.query(query, values);
-    return result.rows[0] || null;
+    const employee = result.rows[0] || null;
+
+    if (employee) {
+      EmployeeService.dispatchWebhook(
+        organization_id,
+        WEBHOOK_EVENTS.EMPLOYEE_UPDATED,
+        employee
+      ).catch((err: any) => console.error('Failed to dispatch employee.updated webhook:', err));
+    }
+
+    return employee;
   }
 
   async delete(id: number, organization_id: number) {
@@ -151,7 +180,17 @@ export class EmployeeService {
       RETURNING *;
     `;
     const result = await pool.query(query, [id, organization_id]);
-    return result.rows[0] || null;
+    const employee = result.rows[0] || null;
+
+    if (employee) {
+      EmployeeService.dispatchWebhook(
+        organization_id,
+        WEBHOOK_EVENTS.EMPLOYEE_DELETED,
+        employee
+      ).catch((err: any) => console.error('Failed to dispatch employee.deleted webhook:', err));
+    }
+
+    return employee;
   }
 }
 

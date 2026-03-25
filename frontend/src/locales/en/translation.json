@@ -122,7 +122,11 @@
     "employeesTitle": "Employee directory failed to load",
     "employeesDescription": "Return to the dashboard or retry in a few seconds.",
     "debuggerTitle": "Debugger view crashed",
-    "debuggerDescription": "Reset the debugger or navigate back to the main dashboard."
+    "debuggerDescription": "Reset the debugger or navigate back to the main dashboard.",
+    "pageErrorTitle": "Application Error",
+    "pageErrorDescription": "Something went wrong with the application. Our team has been notified. Please try refreshing the page or return to the home screen.",
+    "componentErrorTitle": "Component Error",
+    "componentErrorDescription": "This section encountered an error. You can try again or refresh the page."
   },
   "connectAccount": {
     "authenticated": "Authenticated",

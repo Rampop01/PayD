@@ -8,6 +8,9 @@ import config from './config/index.js';
 import logger from './utils/logger.js';
 import passport from './config/passport.js';
 import { apiVersionMiddleware } from './middlewares/apiVersionMiddleware.js';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swaggerConfig.js';
+import fs from 'fs';
 
 // Feature Routes
 import v1Routes from './routes/v1/index.js';
@@ -42,6 +45,18 @@ app.get('/.well-known/stellar.toml', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.sendFile(path.join(__dirname, '../.well-known/stellar.toml'));
 });
+
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get('/api/openapi.json', (req, res) => {
+  res.json(swaggerSpec);
+});
+
+// Export openapi.json for frontend
+fs.writeFileSync(
+  path.join(__dirname, '../openapi.json'),
+  JSON.stringify(swaggerSpec, null, 2)
+);
 
 // Middleware for versioning
 app.use(apiVersionMiddleware);

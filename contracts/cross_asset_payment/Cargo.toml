@@ -1,7 +1,11 @@
 [package]
 name = "cross_asset_payment"
-version = "0.0.1"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Escrow-based cross-asset payment contract for anchor/SEP integration"
 
 [lib]
 crate-type = ["cdylib"]

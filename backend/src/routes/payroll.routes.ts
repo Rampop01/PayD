@@ -6,25 +6,76 @@ import { authorizeRoles, isolateOrganization } from '../middlewares/rbac.js';
 
 const router = Router();
 
+/**
+ * @swagger
+ * tags:
+ *   name: Payroll
+ *   description: Payroll transaction querying and management
+ */
+
 // Apply authentication to all payroll routes
 router.use(authenticateJWT);
 router.use(isolateOrganization);
 
 /**
- * Query payroll transactions with filtering and pagination
- * GET /api/payroll/transactions
- * Query params:
- * - orgPublicKey: Organization public key (required)
- * - employeeId: Filter by employee ID
- * - batchId: Filter by payroll batch ID
- * - assetCode: Filter by asset code
- * - assetIssuer: Filter by asset issuer
- * - startDate: Start date (ISO 8601)
- * - endDate: End date (ISO 8601)
- * - page: Page number (default: 1)
- * - limit: Records per page (default: 50, max: 500)
- * - sortBy: Sort field (timestamp, amount, employeeId)
- * - sortOrder: Sort order (asc, desc)
+ * @swagger
+ * /api/payroll/transactions:
+ *   get:
+ *     summary: Query payroll transactions with filtering and pagination
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: orgPublicKey
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: employeeId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: batchId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: assetCode
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: assetIssuer
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.get('/transactions', async (req: Request, res: Response) => {
   try {
@@ -78,8 +129,45 @@ router.get('/transactions', async (req: Request, res: Response) => {
 });
 
 /**
- * Get payroll for a specific employee
- * GET /api/payroll/employees/:employeeId
+ * @swagger
+ * /api/payroll/employees/{employeeId}:
+ *   get:
+ *     summary: Get payroll for a specific employee
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: employeeId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: orgPublicKey
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.get('/employees/:employeeId', async (req: Request, res: Response) => {
   try {
@@ -115,8 +203,37 @@ router.get('/employees/:employeeId', async (req: Request, res: Response) => {
 });
 
 /**
- * Get employee payroll summary
- * GET /api/payroll/employees/:employeeId/summary
+ * @swagger
+ * /api/payroll/employees/{employeeId}/summary:
+ *   get:
+ *     summary: Get employee payroll summary
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: employeeId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: orgPublicKey
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.get('/employees/:employeeId/summary', async (req: Request, res: Response) => {
   try {
@@ -150,8 +267,35 @@ router.get('/employees/:employeeId/summary', async (req: Request, res: Response)
 });
 
 /**
- * Get payroll batch details
- * GET /api/payroll/batches/:batchId
+ * @swagger
+ * /api/payroll/batches/{batchId}:
+ *   get:
+ *     summary: Get payroll batch details
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: batchId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: orgPublicKey
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.get('/batches/:batchId', async (req: Request, res: Response) => {
   try {
@@ -185,8 +329,40 @@ router.get('/batches/:batchId', async (req: Request, res: Response) => {
 });
 
 /**
- * Get payroll aggregation statistics
- * GET /api/payroll/aggregation
+ * @swagger
+ * /api/payroll/aggregation:
+ *   get:
+ *     summary: Get payroll aggregation statistics
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: orgPublicKey
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: assetCode
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: assetIssuer
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.get('/aggregation', async (req: Request, res: Response) => {
   try {
@@ -220,8 +396,32 @@ router.get('/aggregation', async (req: Request, res: Response) => {
 });
 
 /**
- * Get organization-wide audit report
- * GET /api/payroll/audit
+ * @swagger
+ * /api/payroll/audit:
+ *   get:
+ *     summary: Get organization-wide audit report
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: orgPublicKey
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.get('/audit', async (req: Request, res: Response) => {
   try {
@@ -253,8 +453,35 @@ router.get('/audit', async (req: Request, res: Response) => {
 });
 
 /**
- * Search transactions by memo pattern
- * GET /api/payroll/search/memo
+ * @swagger
+ * /api/payroll/search/memo:
+ *   get:
+ *     summary: Search transactions by memo pattern
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: orgPublicKey
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: pattern
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.get('/search/memo', async (req: Request, res: Response) => {
   try {
@@ -287,8 +514,22 @@ router.get('/search/memo', async (req: Request, res: Response) => {
 });
 
 /**
- * Get transaction details by hash
- * GET /api/payroll/transactions/:txHash
+ * @swagger
+ * /api/payroll/transactions/{txHash}:
+ *   get:
+ *     summary: Get transaction details by hash
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: txHash
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.get('/transactions/:txHash', async (req: Request, res: Response) => {
   try {
@@ -316,8 +557,14 @@ router.get('/transactions/:txHash', async (req: Request, res: Response) => {
 });
 
 /**
- * Get SDS rate limit information
- * GET /api/payroll/status/rate-limit
+ * @swagger
+ * /api/payroll/status/rate-limit:
+ *   get:
+ *     summary: Get SDS rate limit information
+ *     tags: [Payroll]
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.get('/status/rate-limit', (req: Request, res: Response) => {
   try {
@@ -337,8 +584,14 @@ router.get('/status/rate-limit', (req: Request, res: Response) => {
 });
 
 /**
- * Check SDS health status
- * GET /api/payroll/status/health
+ * @swagger
+ * /api/payroll/status/health:
+ *   get:
+ *     summary: Check SDS health status
+ *     tags: [Payroll]
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.get('/status/health', async (req: Request, res: Response) => {
   try {
@@ -361,8 +614,16 @@ router.get('/status/health', async (req: Request, res: Response) => {
 });
 
 /**
- * Clear cache (admin endpoint)
- * POST /api/payroll/cache/clear
+ * @swagger
+ * /api/payroll/cache/clear:
+ *   post:
+ *     summary: Clear cache (admin endpoint)
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.post('/cache/clear', (req: Request, res: Response) => {
   try {
@@ -382,8 +643,16 @@ router.post('/cache/clear', (req: Request, res: Response) => {
 });
 
 /**
- * Get cache statistics
- * GET /api/payroll/cache/stats
+ * @swagger
+ * /api/payroll/cache/stats:
+ *   get:
+ *     summary: Get cache statistics
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Success
  */
 router.get('/cache/stats', (req: Request, res: Response) => {
   try {

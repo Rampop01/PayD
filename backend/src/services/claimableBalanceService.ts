@@ -1,6 +1,7 @@
 import { Keypair, Operation, TransactionBuilder, Asset, Claimant } from '@stellar/stellar-sdk';
 import { StellarService } from './stellarService.js';
 import { pool } from '../config/database.js';
+import { WebhookService, WEBHOOK_EVENTS } from './webhook.service.js';
 
 export interface ClaimableBalanceRecord {
   id: number;
@@ -69,6 +70,17 @@ export class ClaimableBalanceService {
 
     transaction.sign(input.sponsor_keypair);
 
+    const simulation = await StellarService.simulateTransaction(transaction);
+    if (!simulation.success) {
+      throw new Error(
+        `Transaction simulation failed: ${simulation.errorMessage}. ` +
+          `This transaction would likely fail on-chain. Please check: ` +
+          `1) Sufficient balance for ${input.amount} ${input.asset_code}, ` +
+          `2) Valid account sequence, ` +
+          `3) Required trustlines.`
+      );
+    }
+
     const result = await server.submitTransaction(transaction);
 
     const balanceId = this.extractBalanceIdFromTransaction(result.hash, result.result_xdr);
@@ -115,7 +127,28 @@ export class ClaimableBalanceService {
     const dbResult = await pool.query(insertQuery, values);
     const record = dbResult.rows[0] as ClaimableBalanceRecord;
 
+    this.dispatchWebhook(input.organization_id, WEBHOOK_EVENTS.CLAIMABLE_BALANCE_CREATED, {
+      id: record.id,
+      balance_id: balanceId,
+      amount: input.amount,
+      asset_code: input.asset_code,
+      employee_id: input.employee_id,
+      payroll_run_id: input.payroll_run_id,
+    }).catch((err) => console.error('Failed to dispatch claimable_balance.created webhook:', err));
+
     return { record, balance_id: balanceId };
+  }
+
+  private static async dispatchWebhook(
+    organization_id: number,
+    eventType: string,
+    payload: any
+  ): Promise<void> {
+    try {
+      await WebhookService.dispatch(eventType, organization_id, payload);
+    } catch (error) {
+      console.error(`Webhook dispatch failed for ${eventType}:`, error);
+    }
   }
 
   private static extractBalanceIdFromTransaction(hash: string, resultXdr: string): string {
@@ -210,7 +243,22 @@ export class ClaimableBalanceService {
        RETURNING *`,
       [balanceId]
     );
-    return result.rows[0] || null;
+    const record = result.rows[0] || null;
+
+    if (record) {
+      this.dispatchWebhook(record.organization_id, WEBHOOK_EVENTS.CLAIMABLE_BALANCE_CLAIMED, {
+        id: record.id,
+        balance_id: balanceId,
+        amount: record.amount,
+        asset_code: record.asset_code,
+        employee_id: record.employee_id,
+        claimed_at: record.claimed_at,
+      }).catch((err) =>
+        console.error('Failed to dispatch claimable_balance.claimed webhook:', err)
+      );
+    }
+
+    return record;
   }
 
   static async markNotificationSent(balanceId: string): Promise<void> {
@@ -287,6 +335,14 @@ export class ClaimableBalanceService {
       .build();
 
     transaction.sign(issuerKeypair);
+
+    const simulation = await StellarService.simulateTransaction(transaction);
+    if (!simulation.success) {
+      throw new Error(
+        `Transaction simulation failed: ${simulation.errorMessage}. ` +
+          `This clawback operation would likely fail. Please check the balance exists and is claimable.`
+      );
+    }
 
     const result = await server.submitTransaction(transaction);
 

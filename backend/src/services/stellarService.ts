@@ -15,12 +15,37 @@ import {
   SignerKey,
   StrKey,
 } from '@stellar/stellar-sdk';
+import axios from 'axios';
 
 export interface TransactionResult {
   hash: string;
   ledger: number;
   success: boolean;
   resultXdr?: string;
+}
+
+export interface SimulationResult {
+  success: boolean;
+  error?: string;
+  errorCode?: string;
+  errorMessage?: string;
+  operationsResults?: Array<{
+    code: string;
+    message: string;
+  }>;
+  feeCharged?: string;
+  minFeeRequired?: string;
+  latestLedger?: number;
+}
+
+export class SimulationError extends Error {
+  constructor(
+    message: string,
+    public readonly simulationResult?: SimulationResult
+  ) {
+    super(message);
+    this.name = 'SimulationError';
+  }
 }
 
 export interface MultiSigConfig {
@@ -146,6 +171,110 @@ export class StellarService {
         `Transaction submission failed: ${error.message}${resultXdr ? ` - Result XDR: ${resultXdr}` : ''}`
       );
     }
+  }
+
+  static async simulateTransaction(transaction: Transaction): Promise<SimulationResult> {
+    const horizonUrl = process.env.STELLAR_HORIZON_URL || 'https://horizon-testnet.stellar.org';
+
+    try {
+      const txXdr = transaction.toXDR();
+
+      const response = await axios.post(
+        `${horizonUrl}/transactions`,
+        { tx: txXdr },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+
+      const data = response.data;
+      const latestLedger = data.latest_ledger;
+
+      if (data.error) {
+        return {
+          success: false,
+          error: data.error,
+          errorCode: 'tx_sim_failed',
+          errorMessage: data.error,
+          latestLedger,
+        };
+      }
+
+      if (data.result) {
+        const resultXdr = data.result;
+        const txResult = xdr.TransactionResult.fromXDR(resultXdr, 'base64');
+        const operations = txResult.result().results();
+
+        const operationResults: Array<{ code: string; message: string }> = [];
+        let hasFailedOp = false;
+
+        for (const opResult of operations) {
+          const opValue = opResult.value();
+          if (opValue) {
+            const switchValue = (opValue as any).switch?.();
+            const code = switchValue?.name || 'op_success';
+            const message = switchValue?.name || 'Success';
+            operationResults.push({ code, message });
+
+            if (code !== 'op_success') {
+              hasFailedOp = true;
+            }
+          }
+        }
+
+        if (hasFailedOp) {
+          return {
+            success: false,
+            errorCode: 'ops_failed',
+            errorMessage: 'One or more operations failed during simulation',
+            operationsResults: operationResults,
+            latestLedger,
+          };
+        }
+
+        return {
+          success: true,
+          operationsResults: operationResults,
+          feeCharged: data.fee_charged || '100',
+          latestLedger,
+        };
+      }
+
+      return {
+        success: true,
+        latestLedger,
+      };
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || error.message;
+
+      if (error.response?.data?.extras?.result_codes) {
+        const resultCodes = error.response.data.extras.result_codes;
+        return {
+          success: false,
+          error: resultCodes.operations?.join(', ') || resultCodes.transaction || 'Unknown error',
+          errorCode: resultCodes.transaction || 'tx_sim_failed',
+          errorMessage: `Simulation failed: ${resultCodes.operations?.join(', ') || resultCodes.transaction || errorMessage}`,
+        };
+      }
+
+      return {
+        success: false,
+        error: errorMessage,
+        errorCode: 'simulation_error',
+        errorMessage: `Simulation error: ${errorMessage}`,
+      };
+    }
+  }
+
+  static async simulateAndSubmit(transaction: Transaction): Promise<TransactionResult> {
+    const simulation = await this.simulateTransaction(transaction);
+
+    if (!simulation.success) {
+      throw new SimulationError(
+        `Transaction simulation failed: ${simulation.errorMessage}`,
+        simulation
+      );
+    }
+
+    return this.submitTransaction(transaction);
   }
 
   static async setupMultiSig(

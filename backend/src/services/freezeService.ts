@@ -206,6 +206,15 @@ export class FreezeService {
 
     transaction.sign(issuerKeypair);
 
+    const simulation = await StellarService.simulateTransaction(transaction);
+    if (!simulation.success) {
+      throw new Error(
+        `Transaction simulation failed: ${simulation.errorMessage}. ` +
+          `This freeze operation would likely fail on-chain. ` +
+          `Please verify the account exists and the asset trustline is established.`
+      );
+    }
+
     const result = await server.submitTransaction(transaction);
 
     await writeAuditLog({

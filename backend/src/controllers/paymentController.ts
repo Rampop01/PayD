@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { AnchorService } from '../services/anchorService.js';
 import { Keypair } from '@stellar/stellar-sdk';
+import { findConversionPaths, type PathfindRequest } from '../services/crossAssetPaymentService.js';
+import { Sep31TrackingService } from '../services/sep31TrackingService.js';
 
 export class PaymentController {
   /**
@@ -22,14 +24,19 @@ export class PaymentController {
    * POST /api/payments/sep31/initiate
    */
   static async initiateSEP31(req: Request, res: Response) {
-    const { domain, paymentData, secretKey } = req.body;
+    const { domain, paymentData, secretKey, senderPublicKey } = req.body;
 
-    if (!domain || !paymentData || !secretKey) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    if (!domain || !paymentData || !secretKey || !senderPublicKey) {
+      return res
+        .status(400)
+        .json({ error: 'Missing required fields: domain, paymentData, secretKey, senderPublicKey' });
     }
 
     try {
       const clientKeypair = Keypair.fromSecret(secretKey);
+      if (clientKeypair.publicKey() !== senderPublicKey) {
+        return res.status(400).json({ error: 'senderPublicKey does not match secretKey' });
+      }
 
       // 1. Authenticate
       const token = await AnchorService.authenticate(domain, clientKeypair);
@@ -37,9 +44,40 @@ export class PaymentController {
       // 2. Initiate Payment
       const result = await AnchorService.initiatePayment(domain, token, paymentData);
 
+      await Sep31TrackingService.recordInitiation({
+        organizationId: req.user?.organizationId ?? null,
+        senderPublicKey,
+        anchorDomain: domain,
+        requestPayload: paymentData,
+        anchorResponse: result as Record<string, unknown>,
+      });
+
       res.json(result);
     } catch (error: any) {
       console.error('SEP-31 Initiation Error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  /**
+   * POST /api/payments/pathfind
+   */
+  static async findPaths(req: Request, res: Response) {
+    const { fromAsset, toAsset, amount } = req.body as PathfindRequest;
+
+    if (!fromAsset || !toAsset || !amount || amount <= 0) {
+      return res
+        .status(400)
+        .json({
+          error: 'Invalid pathfind request: fromAsset, toAsset, and positive amount required',
+        });
+    }
+
+    try {
+      const paths = await findConversionPaths({ fromAsset, toAsset, amount });
+      res.json({ paths });
+    } catch (error: any) {
+      console.error('Pathfinding error:', error);
       res.status(500).json({ error: error.message });
     }
   }
@@ -62,6 +100,7 @@ export class PaymentController {
       const token = await AnchorService.authenticate(domain as string, clientKeypair);
 
       const status = await AnchorService.getTransaction(domain as string, token, id as string);
+      await Sep31TrackingService.updateFromPoll(domain as string, id as string, status as Record<string, unknown>);
       res.json(status);
     } catch (error: any) {
       res.status(500).json({ error: error.message });

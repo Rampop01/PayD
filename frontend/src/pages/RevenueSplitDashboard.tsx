@@ -1,10 +1,5 @@
-/* eslint-disable
-  @typescript-eslint/no-unsafe-assignment,
-  @typescript-eslint/no-unsafe-call,
-  @typescript-eslint/no-unsafe-member-access,
-  @typescript-eslint/no-unsafe-argument
-*/
 import { useEffect, useMemo, useState } from 'react';
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { ContractErrorPanel } from '../components/ContractErrorPanel';
 import { parseContractError, type ContractErrorDetail } from '../utils/contractErrorParser';
 import { useNotification } from '../hooks/useNotification';
@@ -19,27 +14,48 @@ import {
   type RevenueAllocation,
 } from '../services/revenueSplit';
 
-const ORGANIZATION_ID = 1;
+const CHART_COLORS = ['#4af0b8', '#f59e0b', '#60a5fa', '#f97316', '#f43f5e', '#a78bfa'];
 
 function formatAmount(value: number, stablecoin: string): string {
-  return `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${stablecoin}`;
+  return `${value.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })} ${stablecoin}`;
 }
 
 function isLikelyStellarAddress(value: string): boolean {
   return /^G[A-Z0-9]{55}$/.test(value.trim());
 }
 
-function buildConicGradient(allocations: RevenueAllocation[]): string {
-  if (allocations.length === 0) return 'conic-gradient(#3f3f46 0% 100%)';
-  const palette = ['#22c55e', '#06b6d4', '#f59e0b', '#a855f7', '#ef4444', '#84cc16'];
-  let start = 0;
-  const slices = allocations.map((entry, index) => {
-    const end = start + entry.percentage;
-    const segment = `${palette[index % palette.length]} ${start}% ${end}%`;
-    start = end;
-    return segment;
-  });
-  return `conic-gradient(${slices.join(',')})`;
+function getPreferredStablecoin(): string {
+  if (typeof localStorage === 'undefined') {
+    return (
+      (import.meta.env.VITE_PREFERRED_STABLECOIN as string | undefined) || 'USDC'
+    ).toUpperCase();
+  }
+
+  return (
+    localStorage.getItem('preferredStablecoin') ||
+    (import.meta.env.VITE_PREFERRED_STABLECOIN as string | undefined) ||
+    'USDC'
+  ).toUpperCase();
+}
+
+function getReadSourceAddress(walletAddress: string | null): string | null {
+  return walletAddress || (import.meta.env.VITE_SOROBAN_READ_SOURCE as string | undefined) || null;
+}
+
+function getOrgPublicKey(): string | null {
+  if (typeof localStorage === 'undefined') {
+    return (import.meta.env.VITE_ORG_PUBLIC_KEY as string | undefined) || null;
+  }
+
+  return (
+    localStorage.getItem('orgPublicKey') ||
+    localStorage.getItem('organizationPublicKey') ||
+    (import.meta.env.VITE_ORG_PUBLIC_KEY as string | undefined) ||
+    null
+  );
 }
 
 export default function RevenueSplitDashboard() {
@@ -54,11 +70,9 @@ export default function RevenueSplitDashboard() {
   const { sign } = useWalletSigning();
   const { notifyError, notifySuccess } = useNotification();
 
-  const preferredStablecoin = (
-    localStorage.getItem('preferredStablecoin') ||
-    import.meta.env.VITE_PREFERRED_STABLECOIN ||
-    'USDC'
-  ).toUpperCase();
+  const preferredStablecoin = getPreferredStablecoin();
+  const readSourceAddress = getReadSourceAddress(address);
+  const orgPublicKey = getOrgPublicKey();
 
   const totalAllocation = useMemo(
     () =>
@@ -66,6 +80,17 @@ export default function RevenueSplitDashboard() {
         (sum, entry) => sum + (Number.isFinite(entry.percentage) ? entry.percentage : 0),
         0
       ),
+    [allocations]
+  );
+
+  const isAllocationTotalValid = Math.abs(totalAllocation - 100) <= 0.0001;
+
+  const chartData = useMemo(
+    () =>
+      allocations.map((entry, index) => ({
+        ...entry,
+        fill: CHART_COLORS[index % CHART_COLORS.length],
+      })),
     [allocations]
   );
 
@@ -101,16 +126,21 @@ export default function RevenueSplitDashboard() {
           throw new Error('Revenue split contract ID is unavailable.');
         }
 
-        if (!address) {
-          setAllocations([]);
-        } else {
-          const contractAllocations = await fetchRevenueSplitAllocations(contractId, address);
-          setAllocations(
-            contractAllocations.map((a, i) => ({ ...a, id: `alloc-${i}-${a.recipient}` }))
-          );
+        if (!readSourceAddress) {
+          throw new Error('Connect a wallet or set VITE_SOROBAN_READ_SOURCE to load allocations.');
         }
 
-        const distributionEvents = await fetchDistributionEvents(ORGANIZATION_ID, 1, 50);
+        const [contractAllocations, distributionEvents] = await Promise.all([
+          fetchRevenueSplitAllocations(contractId, readSourceAddress),
+          fetchDistributionEvents({ orgPublicKey: orgPublicKey || undefined, page: 1, limit: 50 }),
+        ]);
+
+        setAllocations(
+          contractAllocations.map((entry, index) => ({
+            ...entry,
+            id: `alloc-${index}-${entry.recipient}`,
+          }))
+        );
         setEvents(distributionEvents);
       } catch (loadError) {
         const message = loadError instanceof Error ? loadError.message : 'Failed to load dashboard';
@@ -122,7 +152,7 @@ export default function RevenueSplitDashboard() {
     };
 
     void loadData();
-  }, [address, notifyError]);
+  }, [notifyError, orgPublicKey, readSourceAddress]);
 
   const setAllocationField = (index: number, field: 'recipient' | 'percentage', value: string) => {
     setAllocations((prev) =>
@@ -161,7 +191,7 @@ export default function RevenueSplitDashboard() {
       return;
     }
 
-    if (Math.abs(totalAllocation - 100) > 0.0001) {
+    if (!isAllocationTotalValid) {
       notifyError(
         'Invalid allocation total',
         `Allocation total must equal 100%. Current total: ${totalAllocation.toFixed(2)}%.`
@@ -187,7 +217,7 @@ export default function RevenueSplitDashboard() {
         signTransaction: sign,
       });
 
-      notifySuccess('Allocations updated', `Submitted on-chain update transaction: ${txHash}`);
+      notifySuccess('Allocations updated', `Simulation passed and update was submitted: ${txHash}`);
     } catch (saveError) {
       const parsed = parseContractError(
         undefined,
@@ -207,8 +237,8 @@ export default function RevenueSplitDashboard() {
           <h1 className="text-4xl font-black tracking-tight">
             Revenue Split <span className="text-accent">Dashboard</span>
           </h1>
-          <p className="text-zinc-500 font-mono text-sm tracking-wider uppercase mt-2">
-            Contract-backed allocations and distribution history
+          <p className="mt-2 font-mono text-sm tracking-wider text-zinc-500 uppercase">
+            Contract-backed allocations, live balances, and indexed distributions
           </p>
         </div>
         {!address ? (
@@ -217,57 +247,100 @@ export default function RevenueSplitDashboard() {
             onClick={() => {
               void connect();
             }}
-            className="px-4 py-2 rounded-lg font-bold bg-accent text-black"
+            className="rounded-lg bg-accent px-4 py-2 font-bold text-black"
           >
             Connect Wallet
           </button>
         ) : (
-          <span className="text-xs text-zinc-400 font-mono">
+          <span className="font-mono text-xs text-zinc-400">
             Connected: {address.slice(0, 6)}...{address.slice(-4)}
           </span>
         )}
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-zinc-400 mb-6">Loading revenue split dashboard...</p>
+        <p className="mb-6 text-sm text-zinc-400">Loading revenue split dashboard...</p>
       ) : null}
-      {error ? <p className="text-sm text-red-400 mb-6">{error}</p> : null}
+      {error ? <p className="mb-6 text-sm text-red-400">{error}</p> : null}
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <section className="card glass noise xl:col-span-1">
-          <h2 className="text-lg font-bold mb-4">Current Allocation Splits</h2>
-          <div className="flex items-center gap-6">
-            <div
-              className="w-44 h-44 rounded-full border border-zinc-700"
-              style={{ background: buildConicGradient(allocations) }}
-            />
-            <div className="space-y-2">
-              {allocations.length === 0 ? (
-                <p className="text-sm text-zinc-400">No allocation data loaded.</p>
-              ) : (
-                allocations.map((entry) => (
-                  <p key={entry.id} className="text-xs text-zinc-300">
-                    {entry.recipient.slice(0, 6)}...{entry.recipient.slice(-4)} -{' '}
-                    <span className="font-bold text-white">{entry.percentage.toFixed(2)}%</span>
-                  </p>
-                ))
-              )}
-              <p
-                className={`text-sm font-bold ${Math.abs(totalAllocation - 100) <= 0.0001 ? 'text-green-400' : 'text-red-400'}`}
-              >
-                Total: {totalAllocation.toFixed(2)}%
-              </p>
-            </div>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-bold">Current Allocation Splits</h2>
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-[11px] uppercase tracking-wide text-zinc-400">
+              On-chain
+            </span>
           </div>
+
+          {chartData.length === 0 ? (
+            <p className="text-sm text-zinc-400">No allocation data loaded.</p>
+          ) : (
+            <div className="space-y-5">
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      dataKey="percentage"
+                      nameKey="recipient"
+                      innerRadius={72}
+                      outerRadius={104}
+                      paddingAngle={2}
+                    >
+                      {chartData.map((entry) => (
+                        <Cell key={entry.id} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number | string | undefined) =>
+                        `${Number(value ?? 0).toFixed(2)}%`
+                      }
+                      contentStyle={{
+                        background: '#0f172a',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '12px',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="space-y-2">
+                {chartData.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="flex items-center justify-between rounded-md border border-zinc-800 px-3 py-2 text-xs"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="inline-block h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: entry.fill }}
+                      />
+                      <span className="font-mono text-zinc-300">
+                        {entry.recipient.slice(0, 6)}...{entry.recipient.slice(-4)}
+                      </span>
+                    </div>
+                    <span className="font-bold text-white">{entry.percentage.toFixed(2)}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <p
+            className={`mt-4 text-sm font-bold ${isAllocationTotalValid ? 'text-green-400' : 'text-red-400'}`}
+          >
+            Total: {totalAllocation.toFixed(2)}%
+          </p>
         </section>
 
         <section className="card glass noise xl:col-span-2">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-bold">Edit Allocations</h2>
             <button
               type="button"
               onClick={addRecipient}
-              className="px-3 py-1.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold"
+              className="rounded-md bg-zinc-800 px-3 py-1.5 text-xs font-semibold hover:bg-zinc-700"
             >
               Add Recipient
             </button>
@@ -275,13 +348,13 @@ export default function RevenueSplitDashboard() {
 
           <div className="space-y-3">
             {allocations.map((entry, index) => (
-              <div key={entry.id} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+              <div key={entry.id} className="grid grid-cols-1 items-center gap-3 md:grid-cols-12">
                 <input
                   type="text"
                   value={entry.recipient}
                   onChange={(event) => setAllocationField(index, 'recipient', event.target.value)}
                   placeholder="Recipient Stellar Address"
-                  className="md:col-span-8 bg-[#0a0a0c] border border-zinc-800 rounded-lg px-3 py-2 text-xs"
+                  className="rounded-lg border border-zinc-800 bg-[#0a0a0c] px-3 py-2 text-xs md:col-span-8"
                 />
                 <input
                   type="number"
@@ -291,12 +364,12 @@ export default function RevenueSplitDashboard() {
                   max={100}
                   step={0.01}
                   placeholder="%"
-                  className="md:col-span-3 bg-[#0a0a0c] border border-zinc-800 rounded-lg px-3 py-2 text-xs"
+                  className="rounded-lg border border-zinc-800 bg-[#0a0a0c] px-3 py-2 text-xs md:col-span-3"
                 />
                 <button
                   type="button"
                   onClick={() => removeRecipient(index)}
-                  className="md:col-span-1 text-red-400 text-xs font-semibold"
+                  className="text-xs font-semibold text-red-400 md:col-span-1"
                 >
                   Remove
                 </button>
@@ -304,17 +377,20 @@ export default function RevenueSplitDashboard() {
             ))}
           </div>
 
-          <div className="mt-5 flex items-center justify-between">
-            <p className="text-xs text-zinc-400">Total allocation must be exactly 100%.</p>
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <div className="text-xs text-zinc-400">
+              <p>Total allocation must be exactly 100%.</p>
+              <p>Submission uses a signed contract call only after simulation passes.</p>
+            </div>
             <button
               type="button"
               onClick={() => {
                 void handleSaveAllocations();
               }}
-              disabled={isSaving}
-              className="px-4 py-2 rounded-lg bg-accent text-black font-bold disabled:opacity-70"
+              disabled={isSaving || !isAllocationTotalValid}
+              className="rounded-lg bg-accent px-4 py-2 font-bold text-black disabled:opacity-70"
             >
-              {isSaving ? 'Submitting...' : 'Submit On-Chain Update'}
+              {isSaving ? 'Submitting...' : 'Edit Allocations'}
             </button>
           </div>
 
@@ -322,9 +398,9 @@ export default function RevenueSplitDashboard() {
         </section>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-6">
+      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
         <section className="card glass noise xl:col-span-1">
-          <h2 className="text-lg font-bold mb-4">Live Recipient Balances</h2>
+          <h2 className="mb-4 text-lg font-bold">Live Recipient Balances</h2>
           {recipientBalances.length === 0 ? (
             <p className="text-sm text-zinc-400">No recipient distributions available yet.</p>
           ) : (
@@ -334,7 +410,7 @@ export default function RevenueSplitDashboard() {
                   key={row.recipient}
                   className="flex items-center justify-between border-b border-zinc-800 pb-2"
                 >
-                  <span className="text-xs text-zinc-300 truncate max-w-[180px]">
+                  <span className="max-w-[180px] truncate text-xs text-zinc-300">
                     {row.recipient}
                   </span>
                   <span className="text-xs font-bold text-white">
@@ -351,13 +427,20 @@ export default function RevenueSplitDashboard() {
         </section>
 
         <section className="card glass noise xl:col-span-2">
-          <h2 className="text-lg font-bold mb-4">Historical Distribution Events</h2>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-bold">Historical Distribution Events</h2>
+            {orgPublicKey ? (
+              <span className="font-mono text-[11px] text-zinc-500">
+                Org: {orgPublicKey.slice(0, 6)}...{orgPublicKey.slice(-4)}
+              </span>
+            ) : null}
+          </div>
           {events.length === 0 ? (
             <p className="text-sm text-zinc-400">No backend indexed distribution events found.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-left text-zinc-500 border-b border-zinc-800">
+                <thead className="border-b border-zinc-800 text-left text-zinc-500">
                   <tr>
                     <th className="py-2 pr-4">Date</th>
                     <th className="py-2 pr-4">Recipient</th>
@@ -373,7 +456,7 @@ export default function RevenueSplitDashboard() {
                         {new Date(event.createdAt).toLocaleString()}
                       </td>
                       <td className="py-2 pr-4 text-xs">{event.recipientLabel}</td>
-                      <td className="py-2 pr-4 text-xs">{event.action}</td>
+                      <td className="py-2 pr-4 text-xs capitalize">{event.action}</td>
                       <td className="py-2 pr-4 text-xs">
                         {formatAmount(event.amount, event.assetCode || preferredStablecoin)}
                       </td>

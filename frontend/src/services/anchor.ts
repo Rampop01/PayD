@@ -1,6 +1,9 @@
 import axios from 'axios';
+import { Keypair } from '@stellar/stellar-sdk';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000/api';
+const API_ORIGIN = ((import.meta.env.VITE_API_URL as string | undefined) || '').replace(/\/+$/, '');
+/** Use v1 API; relative `/api/v1` works with Vite dev proxy. */
+const API_V1 = API_ORIGIN ? `${API_ORIGIN}/api/v1` : '/api/v1';
 
 export interface SEP31Transaction {
   id: string;
@@ -14,7 +17,7 @@ export interface SEP31Transaction {
 export const anchorService = {
   getAnchorInfo: async (domain: string) => {
     const response = await axios.get<{ info: Record<string, unknown> }>(
-      `${API_BASE_URL}/payments/anchor-info`,
+      `${API_V1}/payments/anchor-info`,
       {
         params: { domain },
       }
@@ -25,19 +28,30 @@ export const anchorService = {
   initiatePayment: async (
     domain: string,
     secretKey: string,
-    paymentData: { amount: string; asset_code: string; receiver_id: string }
+    paymentData: { amount: string; asset_code: string; receiver_id: string },
+    opts?: { twoFactorToken?: string }
   ) => {
-    const response = await axios.post<{ id: string }>(`${API_BASE_URL}/payments/sep31/initiate`, {
-      domain,
-      secretKey,
-      paymentData,
-    });
+    const senderPublicKey = Keypair.fromSecret(secretKey).publicKey();
+    const headers: Record<string, string> = {};
+    if (opts?.twoFactorToken) {
+      headers['x-2fa-token'] = opts.twoFactorToken;
+    }
+    const response = await axios.post<{ id: string }>(
+      `${API_V1}/payments/sep31/initiate`,
+      {
+        domain,
+        secretKey,
+        senderPublicKey,
+        paymentData,
+      },
+      { headers }
+    );
     return response.data;
   },
 
   getTransactionStatus: async (domain: string, id: string, secretKey: string) => {
     const response = await axios.get<SEP31Transaction>(
-      `${API_BASE_URL}/payments/sep31/status/${domain}/${id}`,
+      `${API_V1}/payments/sep31/status/${encodeURIComponent(domain)}/${encodeURIComponent(id)}`,
       {
         params: { secretKey },
       }
