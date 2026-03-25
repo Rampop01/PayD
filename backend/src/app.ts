@@ -26,6 +26,7 @@ import assetRoutes from './routes/assetRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
 import contractRoutes from './routes/contractRoutes.js';
+import scheduleRoutes from './routes/scheduleRoutes.js';
 import ratesRoutes from './routes/ratesRoutes.js';
 import stellarThrottlingRoutes from './routes/stellarThrottlingRoutes.js';
 import { dataRateLimit } from './middlewares/rateLimitMiddleware.js';
@@ -73,6 +74,14 @@ app.use('/api/v1', apiRateLimit(), v1Routes);
 app.use('/webhooks', apiRateLimit(), webhookRoutes);
 
 // Upstream / Base routes
+app.use('/api/auth', authRoutes);
+app.use('/api/payroll', payrollRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/assets', assetRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api', contractRoutes);
+app.use('/api/schedules', scheduleRoutes);
 app.use('/api/auth', authRateLimit(), authRoutes);
 app.use('/api/payroll', apiRateLimit(), payrollRoutes);
 app.use('/api/employees', dataRateLimit(), employeeRoutes);
