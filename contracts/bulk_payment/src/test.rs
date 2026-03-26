@@ -4,6 +4,7 @@ use soroban_sdk::{
     testutils::Address as _,
     testutils::AuthorizedFunction,
     testutils::AuthorizedInvocation,
+    testutils::Ledger,
     token::{Client as TokenClient, StellarAssetClient},
     Address, Env, IntoVal, Vec,
 };
@@ -1575,4 +1576,124 @@ fn test_remove_account_limits_requires_admin_auth() {
         auths.iter().any(|(addr, _)| *addr == admin),
         "remove_account_limits must require auth from admin"
     );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── LEDGER SEQUENCE VERIFICATION TESTS (Issue #173) ───────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+
+/// Helper that initializes the contract with a non-zero ledger sequence.
+fn setup_with_ledger(initial_ledger: u32) -> (Env, Address, Address, BulkPaymentContractClient<'static>) {
+    let env = Env::default();
+    env.mock_all_auths();
+    env.ledger().set_sequence_number(initial_ledger);
+
+    let token_admin = Address::generate(&env);
+    let token_id = env.register_stellar_asset_contract_v2(token_admin.clone()).address();
+    let sender = Address::generate(&env);
+    StellarAssetClient::new(&env, &token_id).mint(&sender, &1_000_000);
+
+    let admin = Address::generate(&env);
+    let contract_id = env.register(BulkPaymentContract, ());
+    let client = BulkPaymentContractClient::new(&env, &contract_id);
+    client.initialize(&admin);
+
+    (env, sender, token_id, client)
+}
+
+#[test]
+fn test_ledger_replay_detected_same_ledger() {
+    let (env, sender, token, client) = setup_with_ledger(100);
+    let payments = one_payment(&env);
+
+    // First batch at ledger 100 should succeed
+    client.execute_batch(&sender, &token, &payments, &0);
+
+    // Second batch at same ledger 100 should fail with LedgerReplayDetected
+    // (sequence is now 1, so pass correct sequence)
+    assert_eq!(client.get_sequence(), 1);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #18)")]
+fn test_ledger_replay_panics_same_ledger() {
+    let (env, sender, token, client) = setup_with_ledger(100);
+    let payments = one_payment(&env);
+
+    client.execute_batch(&sender, &token, &payments, &0);
+    // Same ledger, next sequence — should panic with LedgerReplayDetected (#18)
+    client.execute_batch(&sender, &token, &payments, &1);
+}
+
+#[test]
+fn test_ledger_replay_allowed_different_ledgers() {
+    let (env, sender, token, client) = setup_with_ledger(100);
+    let payments = one_payment(&env);
+
+    client.execute_batch(&sender, &token, &payments, &0);
+
+    // Advance ledger to 101
+    env.ledger().set_sequence_number(101);
+
+    // Should succeed at a new ledger
+    client.execute_batch(&sender, &token, &payments, &1);
+    assert_eq!(client.get_sequence(), 2);
+    assert_eq!(client.get_batch_count(), 2);
+}
+
+#[test]
+fn test_get_last_batch_ledger() {
+    let (env, sender, token, client) = setup_with_ledger(200);
+    let payments = one_payment(&env);
+
+    assert_eq!(client.get_last_batch_ledger(&sender), 0);
+
+    client.execute_batch(&sender, &token, &payments, &0);
+    assert_eq!(client.get_last_batch_ledger(&sender), 200);
+
+    env.ledger().set_sequence_number(300);
+    client.execute_batch(&sender, &token, &payments, &1);
+    assert_eq!(client.get_last_batch_ledger(&sender), 300);
+}
+
+#[test]
+fn test_ledger_replay_per_sender_isolation() {
+    let (env, sender, token, client) = setup_with_ledger(100);
+
+    // Create a second sender
+    let sender2 = Address::generate(&env);
+    StellarAssetClient::new(&env, &token).mint(&sender2, &1_000_000);
+
+    let payments = one_payment(&env);
+
+    // Sender 1 executes at ledger 100
+    client.execute_batch(&sender, &token, &payments, &0);
+
+    // Sender 2 should be able to execute at the same ledger 100
+    client.execute_batch(&sender2, &token, &payments, &1);
+
+    assert_eq!(client.get_last_batch_ledger(&sender), 100);
+    assert_eq!(client.get_last_batch_ledger(&sender2), 100);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #18)")]
+fn test_ledger_replay_v2_panics_same_ledger() {
+    let (env, sender, token, client) = setup_with_ledger(150);
+    let payments = one_payment(&env);
+
+    client.execute_batch_v2(&sender, &token, &payments, &0, &true);
+    // Same ledger — should panic
+    client.execute_batch_v2(&sender, &token, &payments, &1, &true);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #18)")]
+fn test_ledger_replay_partial_panics_same_ledger() {
+    let (env, sender, token, client) = setup_with_ledger(150);
+    let payments = one_payment(&env);
+
+    client.execute_batch_partial(&sender, &token, &payments, &0);
+    // Same ledger — should panic
+    client.execute_batch_partial(&sender, &token, &payments, &1);
 }

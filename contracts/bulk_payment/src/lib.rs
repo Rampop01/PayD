@@ -32,6 +32,8 @@ pub enum ContractError {
     PaymentNotFound      = 16,
     /// Contract is paused — all payment operations are suspended.
     ContractPaused       = 17,
+    /// Sender already executed a batch in this ledger sequence.
+    LedgerReplayDetected = 18,
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────
@@ -189,6 +191,8 @@ pub enum DataKey {
     PaymentEntry(u64, u32),
     /// Emergency pause flag (circuit breaker)
     Paused,
+    /// Tracks the last ledger sequence in which a batch was executed (per sender).
+    LastBatchLedger(Address),
 }
 
 const MAX_BATCH_SIZE: u32 = 100;
@@ -367,6 +371,7 @@ impl BulkPaymentContract {
     ) -> Result<u64, ContractError> {
         Self::require_not_paused(&env)?;
         sender.require_auth();
+        Self::require_unique_ledger(&env, &sender)?;
         Self::bump_core_ttl(&env);
         Self::check_and_advance_sequence(&env, expected_sequence)?;
 
@@ -428,6 +433,7 @@ impl BulkPaymentContract {
     ) -> Result<u64, ContractError> {
         Self::require_not_paused(&env)?;
         sender.require_auth();
+        Self::require_unique_ledger(&env, &sender)?;
         Self::bump_core_ttl(&env);
         Self::check_and_advance_sequence(&env, expected_sequence)?;
 
@@ -535,6 +541,7 @@ impl BulkPaymentContract {
     ) -> Result<u64, ContractError> {
         Self::require_not_paused(&env)?;
         sender.require_auth();
+        Self::require_unique_ledger(&env, &sender)?;
         Self::bump_core_ttl(&env);
         Self::check_and_advance_sequence(&env, expected_sequence)?;
 
@@ -652,6 +659,13 @@ impl BulkPaymentContract {
             );
             value
         } else { 0 }
+    }
+
+    /// Returns the ledger sequence of the last batch executed by a given sender.
+    pub fn get_last_batch_ledger(env: Env, sender: Address) -> u32 {
+        env.storage().persistent()
+            .get(&DataKey::LastBatchLedger(sender))
+            .unwrap_or(0)
     }
 
     // ── Private helpers ───────────────────────────────────────────────────
@@ -997,6 +1011,22 @@ impl BulkPaymentContract {
                 );
             }
         }
+    }
+
+    /// Ensures the sender has not already executed a batch in the current
+    /// ledger sequence, preventing replay attacks.
+    fn require_unique_ledger(env: &Env, sender: &Address) -> Result<(), ContractError> {
+        let current_ledger = env.ledger().sequence();
+        let key = DataKey::LastBatchLedger(sender.clone());
+        let last_ledger: u32 = env.storage().persistent().get(&key).unwrap_or(0);
+        if last_ledger == current_ledger && current_ledger != 0 {
+            return Err(ContractError::LedgerReplayDetected);
+        }
+        env.storage().persistent().set(&key, &current_ledger);
+        env.storage().persistent().extend_ttl(
+            &key, PERSISTENT_TTL_THRESHOLD, PERSISTENT_TTL_EXTEND_TO,
+        );
+        Ok(())
     }
 }
 

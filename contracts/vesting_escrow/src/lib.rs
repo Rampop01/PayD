@@ -18,6 +18,10 @@ pub struct VestingConfig {
 #[contracttype]
 pub enum DataKey {
     Config,
+    /// Tracks the last ledger sequence in which a claim was processed.
+    LastClaimLedger,
+    /// Tracks the last ledger sequence in which a clawback was processed.
+    LastClawbackLedger,
 }
 
 const PERSISTENT_TTL_THRESHOLD: u32 = 20_000;
@@ -94,6 +98,9 @@ impl VestingContract {
         let mut config: VestingConfig = e.storage().persistent().get(&DataKey::Config).expect("Config entry unavailable; restore and retry");
         
         config.beneficiary.require_auth();
+
+        // Ledger sequence verification: prevent duplicate claims in the same ledger
+        Self::require_unique_ledger(&e, &DataKey::LastClaimLedger);
         
         let vested = Self::calc_vested(&e, &config);
         let claimable = vested - config.claimed_amount;
@@ -117,6 +124,9 @@ impl VestingContract {
         let mut config: VestingConfig = e.storage().persistent().get(&DataKey::Config).expect("Config entry unavailable; restore and retry");
         
         config.clawback_admin.require_auth();
+
+        // Ledger sequence verification: prevent duplicate clawback in the same ledger
+        Self::require_unique_ledger(&e, &DataKey::LastClawbackLedger);
         
         if !config.is_active {
             panic!("Already revoked/inactive");
@@ -189,6 +199,32 @@ impl VestingContract {
         let duration = config.duration_seconds as i128;
         
         total.checked_mul(elapsed).unwrap().checked_div(duration).unwrap()
+    }
+
+    /// Returns the ledger sequence of the last successful claim.
+    pub fn get_last_claim_ledger(e: Env) -> u32 {
+        e.storage().persistent().get(&DataKey::LastClaimLedger).unwrap_or(0)
+    }
+
+    /// Returns the ledger sequence of the last successful clawback.
+    pub fn get_last_clawback_ledger(e: Env) -> u32 {
+        e.storage().persistent().get(&DataKey::LastClawbackLedger).unwrap_or(0)
+    }
+
+    /// Ensures the operation has not already been executed in the current ledger
+    /// sequence, preventing replay attacks. Records the current ledger on success.
+    fn require_unique_ledger(e: &Env, key: &DataKey) {
+        let current_ledger = e.ledger().sequence();
+        let last_ledger: u32 = e.storage().persistent().get(key).unwrap_or(0);
+        if last_ledger == current_ledger && current_ledger != 0 {
+            panic!("Operation already processed in this ledger sequence");
+        }
+        e.storage().persistent().set(key, &current_ledger);
+        e.storage().persistent().extend_ttl(
+            key,
+            PERSISTENT_TTL_THRESHOLD,
+            PERSISTENT_TTL_EXTEND_TO,
+        );
     }
 
     fn bump_config_ttl(e: &Env) {

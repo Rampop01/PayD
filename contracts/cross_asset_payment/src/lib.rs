@@ -8,6 +8,8 @@ pub enum DataKey {
     Admin,
     Payment(u64),
     PaymentCount,
+    /// Tracks the last ledger sequence in which a payment was initiated (per sender).
+    LastPaymentLedger(Address),
 }
 
 const PERSISTENT_TTL_THRESHOLD: u32 = 20_000;
@@ -76,6 +78,9 @@ impl CrossAssetPaymentContract {
         anchor_id: String,
     ) -> u64 {
         from.require_auth();
+
+        // Ledger sequence verification: prevent duplicate payments from the same sender in one ledger
+        Self::require_unique_ledger(&env, &from);
 
         // Transfer funds from sender to this contract (escrow)
         let token_client = token::Client::new(&env, &asset);
@@ -168,6 +173,30 @@ impl CrossAssetPaymentContract {
             );
         }
         count
+    }
+
+    /// Returns the ledger sequence of the last payment initiated by a given sender.
+    pub fn get_last_payment_ledger(env: Env, sender: Address) -> u32 {
+        env.storage().persistent()
+            .get(&DataKey::LastPaymentLedger(sender))
+            .unwrap_or(0)
+    }
+
+    /// Ensures the sender has not already initiated a payment in the current
+    /// ledger sequence, preventing replay attacks.
+    fn require_unique_ledger(env: &Env, sender: &Address) {
+        let current_ledger = env.ledger().sequence();
+        let key = DataKey::LastPaymentLedger(sender.clone());
+        let last_ledger: u32 = env.storage().persistent().get(&key).unwrap_or(0);
+        if last_ledger == current_ledger && current_ledger != 0 {
+            panic!("Payment already initiated in this ledger sequence");
+        }
+        env.storage().persistent().set(&key, &current_ledger);
+        env.storage().persistent().extend_ttl(
+            &key,
+            PERSISTENT_TTL_THRESHOLD,
+            PERSISTENT_TTL_EXTEND_TO,
+        );
     }
 
     fn require_admin(env: &Env) {
