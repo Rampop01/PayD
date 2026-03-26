@@ -9,7 +9,8 @@ TypeScript/Node.js backend service for PayD payroll platform with Stellar Data S
 ✅ **Query Abstraction** - Clean API for payroll operations  
 ✅ **Automatic Caching** - Reduced SDS API calls  
 ✅ **Retry Logic** - Exponential backoff for resilience  
-✅ **Aggregate Reporting** - Organization-wide audit reports  
+✅ **Aggregate Reporting** - Organization-wide audit reports
+✅ **Tenant Config Caching** - Organization settings cached in Redis for 5 minutes
 ✅ **Performance Benchmarking** - SDS vs Horizon comparison  
 ✅ **REST API** - Comprehensive endpoints for all operations
 

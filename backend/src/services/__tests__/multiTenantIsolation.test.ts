@@ -16,7 +16,12 @@ describe('Multi-tenant query isolation', () => {
   it('employeeService.findAll scopes by organization_id', async () => {
     (pool.query as jest.Mock).mockResolvedValue({ rows: [] });
 
-    await employeeService.findAll(42, { page: 1, limit: 10 });
+    await employeeService.findAll(42, {
+      page: 1,
+      limit: 10,
+      sort_by: 'created_at',
+      sort_order: 'desc',
+    });
 
     const [query, params] = (pool.query as jest.Mock).mock.calls[0];
     expect(query).toContain('organization_id = $');
