@@ -9,12 +9,6 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/__tests__/setup.ts'],
     css: false, // Disable CSS processing to avoid ESM issues
-    pool: 'threads', // Use threads instead of forks to avoid ESM issues
-    poolOptions: {
-      threads: {
-        singleThread: true,
-      },
-    },
   },
   resolve: {
     alias: {

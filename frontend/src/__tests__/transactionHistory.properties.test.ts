@@ -350,7 +350,7 @@ describe('Property 3: Pagination Parameters', () => {
       fc.property(
         fc.string({ minLength: 56, maxLength: 56 }), // contractId
         arbitraryPaginationParams(),
-        (contractId, { page, limit }) => {
+        (_contractId, { page, limit }) => {
           // Build the query parameters using the same logic as the API service
           const params = new URLSearchParams();
 
