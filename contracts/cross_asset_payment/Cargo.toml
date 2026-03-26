@@ -8,10 +8,16 @@ repository.workspace = true
 description = "Escrow-based cross-asset payment contract for anchor/SEP integration"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 soroban-sdk = { workspace = true }
 stellar-access = { workspace = true }
 stellar-macros = { workspace = true }
 stellar-tokens = { workspace = true }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+
+[features]
+testutils = ["soroban-sdk/testutils"]

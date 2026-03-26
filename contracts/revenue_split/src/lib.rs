@@ -9,6 +9,8 @@ mod test;
 pub enum DataKey {
     Admin,
     Recipients,
+    /// Tracks the last ledger sequence in which a distribution was processed.
+    LastDistributeLedger,
 }
 
 const PERSISTENT_TTL_THRESHOLD: u32 = 20_000;
@@ -101,6 +103,9 @@ impl RevenueSplitContract {
     /// Distributes a specific token amount from a sender to the listed recipients based on their shares.
     pub fn distribute(env: Env, token: Address, from: Address, amount: i128) {
         from.require_auth();
+
+        // Ledger sequence verification: prevent duplicate distributions in the same ledger
+        Self::require_unique_ledger(&env);
         
         let shares: Vec<RecipientShare> = env.storage().persistent().get(&DataKey::Recipients).expect("Recipients entry unavailable; restore and retry");
         Self::bump_core_ttl(&env);
@@ -126,6 +131,29 @@ impl RevenueSplitContract {
                 }
             }
         }
+    }
+
+    /// Returns the ledger sequence of the last successful distribution.
+    pub fn get_last_distribute_ledger(env: Env) -> u32 {
+        env.storage().persistent().get(&DataKey::LastDistributeLedger).unwrap_or(0)
+    }
+
+    /// Ensures a distribution has not already been executed in the current ledger
+    /// sequence, preventing replay attacks.
+    fn require_unique_ledger(env: &Env) {
+        let current_ledger = env.ledger().sequence();
+        let last_ledger: u32 = env.storage().persistent()
+            .get(&DataKey::LastDistributeLedger)
+            .unwrap_or(0);
+        if last_ledger == current_ledger && current_ledger != 0 {
+            panic!("Distribution already processed in this ledger sequence");
+        }
+        env.storage().persistent().set(&DataKey::LastDistributeLedger, &current_ledger);
+        env.storage().persistent().extend_ttl(
+            &DataKey::LastDistributeLedger,
+            PERSISTENT_TTL_THRESHOLD,
+            PERSISTENT_TTL_EXTEND_TO,
+        );
     }
 
     fn bump_core_ttl(env: &Env) {
