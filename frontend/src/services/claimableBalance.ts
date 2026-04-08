@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const API_BASE_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ||
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
   'http://localhost:3000';
 
 export interface ClaimableBalance {

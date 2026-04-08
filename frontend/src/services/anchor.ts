@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Keypair } from '@stellar/stellar-sdk';
 
-const API_ORIGIN = ((import.meta.env.VITE_API_URL as string | undefined) || '').replace(/\/+$/, '');
+const API_ORIGIN = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 /** Use v1 API; relative `/api/v1` works with Vite dev proxy. */
 const API_V1 = API_ORIGIN ? `${API_ORIGIN}/api/v1` : '/api/v1';
 

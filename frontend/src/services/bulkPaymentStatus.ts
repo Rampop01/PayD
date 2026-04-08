@@ -11,9 +11,9 @@ import {
 import { simulateTransaction } from './transactionSimulation';
 
 const API_BASE_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:3000';
+  import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const DEFAULT_RPC_URL =
-  (import.meta.env.PUBLIC_STELLAR_RPC_URL as string | undefined) ||
+  import.meta.env.PUBLIC_STELLAR_RPC_URL ||
   'https://soroban-testnet.stellar.org';
 
 export interface PayrollRunRecord {

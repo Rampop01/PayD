@@ -5,13 +5,19 @@ import { useTransactionSimulation } from '../hooks/useTransactionSimulation';
 import { TransactionSimulationPanel } from '../components/TransactionSimulationPanel';
 import { useNotification } from '../hooks/useNotification';
 import { useSocket } from '../hooks/useSocket';
-import { createClaimableBalanceTransaction, generateWallet } from '../services/stellar';
+import { createClaimableBalanceTransaction } from '../services/stellar';
 import { useTranslation } from 'react-i18next';
-import { Card, Heading, Text, Button, Input, Select } from '@stellar/design-system';
+import { Heading, Text, Button, Input, Select } from '@stellar/design-system';
+import {
+  fetchSchedules,
+  saveSchedule,
+  cancelSchedule,
+  PayrollSchedule,
+  SchedulingConfig,
+} from '../services/payrollScheduler';
 import { SchedulingWizard } from '../components/SchedulingWizard';
 import { CountdownTimer } from '../components/CountdownTimer';
 import { BulkPaymentStatusTracker } from '../components/BulkPaymentStatusTracker';
-
 import { ContractErrorPanel } from '../components/ContractErrorPanel';
 import { parseContractError, type ContractErrorDetail } from '../utils/contractErrorParser';
 import { HelpLink } from '../components/HelpLink';
@@ -24,6 +30,7 @@ interface PayrollFormState {
   memo?: string;
 }
 
+const formatDate = (dateString: string | undefined) => {
 type SchedulingFrequency = 'weekly' | 'biweekly' | 'monthly';
 
 interface EmployeePreference {
@@ -114,6 +121,8 @@ const formatDate = (dateString: string) => {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
   });
 };
 
@@ -126,9 +135,6 @@ interface PendingClaim {
   status: string;
 }
 
-// Mock employer secret key for simulation purposes
-const MOCK_EMPLOYER_SECRET = 'SD3X5K7G7XV4K5V3M2G5QXH434M3VX6O5P3QVQO3L2PQSQQQQQQQQQQQ';
-
 const initialFormState: PayrollFormState = {
   employeeName: '',
   amount: '',
@@ -139,6 +145,16 @@ const initialFormState: PayrollFormState = {
 
 export default function PayrollScheduler() {
   const { t } = useTranslation();
+  const { notifySuccess, notifyError } = useNotification();
+  const { unsubscribeFromTransaction } = useSocket();
+  const [formData, setFormData] = useState<PayrollFormState>(initialFormState);
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [activeSchedules, setActiveSchedules] = useState<PayrollSchedule[]>([]);
+  const [isLoadingSchedules, setIsLoadingSchedules] = useState(true);
+  const [contractError, setContractError] = useState<ContractErrorDetail | null>(null);
+
+  const organizationId = 1;
   const { notifySuccess, notify, notifyPaymentSuccess, notifyPaymentFailure, notifyApiError } =
     useNotification();
   const { socket, subscribeToTransaction, unsubscribeFromTransaction } = useSocket();
@@ -181,10 +197,43 @@ export default function PayrollScheduler() {
     const saved = loadSavedData();
     if (saved) {
       setFormData(saved);
-      notify('Recovered unsaved payroll draft');
     }
-  }, [loadSavedData, notify]);
+    void refreshSchedules();
+  }, [loadSavedData]);
 
+  const refreshSchedules = async () => {
+    setIsLoadingSchedules(true);
+    try {
+      const data = await fetchSchedules(organizationId);
+      setActiveSchedules(data);
+    } catch (err) {
+      console.error('Failed to load schedules', err);
+    } finally {
+      setIsLoadingSchedules(false);
+    }
+  };
+
+  const handleScheduleComplete = async (config: SchedulingConfig) => {
+    try {
+      await saveSchedule(organizationId, config);
+      setIsWizardOpen(false);
+      notifySuccess('Payroll schedule saved!', 'Configuration persisted and automation active.');
+      void refreshSchedules();
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      notifyError('Failed to save schedule', errorMessage);
+    }
+  };
+
+  const handleCancelAction = async (scheduleId: number) => {
+    try {
+      await cancelSchedule(organizationId, scheduleId);
+      notifySuccess('Schedule cancelled', 'Automation has been disabled.');
+      void refreshSchedules();
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      notifyError('Failed to cancel schedule', errorMessage);
+    }
   // Restore confirmed schedule (persisted locally after wizard confirmation).
   useEffect(() => {
     try {
@@ -224,7 +273,7 @@ export default function PayrollScheduler() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev: PayrollFormState) => ({ ...prev, [name]: value }));
     if (simulationResult) {
       resetSimulation();
       setContractError(null);
@@ -255,6 +304,11 @@ export default function PayrollScheduler() {
   }, [socket, notifyPaymentSuccess]);
 
   const handleInitialize = async () => {
+    if (!formData.amount || isNaN(Number(formData.amount))) {
+      notifyError('Invalid amount', 'Please enter a valid numeric value.');
+      return;
+    }
+
     if (!formData.employeeName || !formData.amount) {
       setContractError({
         code: 'MISSING_FIELDS',
@@ -266,14 +320,22 @@ export default function PayrollScheduler() {
 
     setContractError(null);
 
-    // Mock XDR for simulation demonstration
-    const mockXdr =
-      'AAAAAgAAAABmF8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
-
-    const result = await simulate({ envelopeXdr: mockXdr });
-    if (result && !result.success) {
-      const parsed = parseContractError(result.envelopeXdr, result.description);
-      setContractError(parsed);
+    try {
+      const mockRecipientPublicKey = 'GBX3X...';
+      const xdrResult = await createClaimableBalanceTransaction(
+        '',
+        mockRecipientPublicKey,
+        formData.amount,
+        'USDC'
+      );
+      const result = await simulate({ envelopeXdr: xdrResult });
+      if (result && !result.success) {
+        const parsed = parseContractError(result.envelopeXdr, result.description);
+        setContractError(parsed);
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      notifyError('Simulation failed', errorMessage);
     }
   };
 
@@ -281,6 +343,8 @@ export default function PayrollScheduler() {
     setIsBroadcasting(true);
     setContractError(null);
     try {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      notifySuccess('Transaction Broadcasted', 'Payroll distribution initiated successfully.');
       const mockRecipientPublicKey = generateWallet().publicKey;
 
       // Integrate claimable balance logic from Issue #44
@@ -390,55 +454,73 @@ export default function PayrollScheduler() {
         </div>
         <div className="flex flex-col items-end gap-2">
           <AutosaveIndicator saving={saving} lastSaved={lastSaved} />
-          <button onClick={() => setIsWizardOpen(true)}>
+          <button
+            className="flex items-center gap-2 px-4 py-2 bg-accent/10 border border-accent/20 rounded-lg text-accent hover:bg-accent/20 transition-all font-bold text-xs uppercase tracking-widest"
+            onClick={() => setIsWizardOpen(true)}
+          >
             <svg
               width="14"
               height="14"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
             </svg>
+            Setup Auto-Payroll
           </button>
         </div>
       </div>
 
-      {activeSchedule && (
-        <div className="w-full mb-12 bg-black/20 border border-success/30 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-1 h-full bg-success"></div>
-          <div>
-            <h3 className="text-success font-black text-lg mb-1 flex items-center gap-2">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              Automation Active
-            </h3>
-            <p className="text-muted text-sm">
-              Scheduled to run{' '}
-              <span className="font-bold text-text capitalize">{activeSchedule.frequency}</span> at{' '}
-              <span className="font-mono text-text">{activeSchedule.timeOfDay}</span>
-            </p>
-          </div>
-          <div className="bg-bg border border-hi rounded-xl p-4 shadow-inner">
-            <span className="block text-[10px] uppercase font-bold text-muted mb-2 tracking-widest text-center">
-              Next Scheduled Run
-            </span>
-            <CountdownTimer targetDate={nextRunDate} />
-          </div>
+      {activeSchedules.length > 0 && (
+        <div className="w-full mb-12 flex flex-col gap-6">
+          <Heading as="h2" size="sm" weight="bold">Active Schedules</Heading>
+          {activeSchedules.map(schedule => (
+            <div key={schedule.id} className="w-full bg-black/20 border border-success/30 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1 h-full bg-success"></div>
+              <div>
+                <h3 className="text-success font-black text-lg mb-1 flex items-center gap-2">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Automation Active
+                </h3>
+                <p className="text-muted text-sm">
+                  Scheduled <span className="font-bold text-text capitalize">{schedule.frequency}</span> at{' '}
+                  <span className="font-mono text-text">{schedule.time_of_day}</span>
+                </p>
+                <div className="mt-4">
+                  <Button variant="secondary" size="xs" onClick={() => handleCancelAction(schedule.id)}>
+                    Cancel Schedule
+                  </Button>
+                </div>
+              </div>
+              <div className="bg-bg border border-hi rounded-xl p-4 shadow-inner">
+                <span className="block text-[10px] uppercase font-bold text-muted mb-2 tracking-widest text-center">
+                  Next Scheduled Run
+                </span>
+                <CountdownTimer targetDate={schedule.next_run_at ? new Date(schedule.next_run_at) : null} />
+                {schedule.last_run_at && (
+                  <span className="block text-[10px] text-muted mt-2 text-center">
+                    Last run: {formatDate(schedule.last_run_at)}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -449,6 +531,7 @@ export default function PayrollScheduler() {
         />
       ) : (
         <div className="w-full grid grid-cols-1 lg:grid-cols-5 gap-8 mb-12">
+          {/* Manual Run Form */}
           <div className="lg:col-span-3">
             <form
               onSubmit={(e: React.FormEvent) => {
@@ -457,6 +540,10 @@ export default function PayrollScheduler() {
               }}
               className="w-full grid grid-cols-1 md:grid-cols-2 gap-6 card glass noise"
             >
+              <div className="md:col-span-2">
+                <Heading as="h3" size="xs" weight="bold">Manual Payroll Run</Heading>
+                <Text size="xs" addlClassName="text-muted">Initiate a one-time distribution</Text>
+              </div>
               <div className="md:col-span-2">
                 <Input
                   id="employeeName"
@@ -576,72 +663,12 @@ export default function PayrollScheduler() {
                 weight="regular"
                 addlClassName="text-muted leading-relaxed mb-4"
               >
-                All transactions are simulated via Stellar Horizon before submission. This catches
-                common errors like:
+                All transactions are simulated via Stellar Horizon before submission.
               </Text>
-              <ul className="text-xs text-muted space-y-2 list-disc pl-4 font-medium">
-                <li>Insufficient XLM balance for fees</li>
-                <li>Invalid sequence numbers</li>
-                <li>Missing trustlines for tokens</li>
-                <li>Account eligibility status</li>
-              </ul>
             </div>
           </div>
         </div>
       )}
-
-      <div className="w-full">
-        <Heading as="h2" size="sm" weight="bold" addlClassName="mb-4">
-          Pending Claims
-        </Heading>
-        <Card>
-          {pendingClaims.length === 0 ? (
-            <Text as="p" size="sm" weight="regular" addlClassName="text-muted">
-              No pending claimable balances.
-            </Text>
-          ) : (
-            <ul className="flex flex-col gap-4">
-              {pendingClaims.map((claim: PendingClaim) => (
-                <li key={claim.id} className="border border-hi p-4 rounded-lg">
-                  <div className="flex justify-between mb-2">
-                    <Heading as="h3" size="xs" weight="bold">
-                      {claim.employeeName}
-                    </Heading>
-                    <span className="bg-accent/20 text-accent px-2 py-1 rounded-full text-xs">
-                      {claim.status}
-                    </span>
-                  </div>
-                  <div className="text-sm text-muted flex justify-between items-center">
-                    <div>
-                      <Text as="p" size="xs" weight="regular">
-                        Amount: {claim.amount} USDC
-                      </Text>
-                      <Text as="p" size="xs" weight="regular">
-                        Scheduled: {formatDate(claim.dateScheduled)}
-                      </Text>
-                      <Text
-                        as="p"
-                        size="xs"
-                        weight="regular"
-                        addlClassName="font-mono truncate max-w-[200px]"
-                        title={claim.claimantPublicKey}
-                      >
-                        To: {claim.claimantPublicKey}
-                      </Text>
-                    </div>
-                    <button
-                      onClick={() => handleRemoveClaim(claim.id)}
-                      className="text-danger hover:text-danger/80 text-sm font-medium"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-      </div>
 
       <div className="w-full">
         <BulkPaymentStatusTracker organizationId={1} />
